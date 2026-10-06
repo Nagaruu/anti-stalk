@@ -28,6 +28,9 @@ class AntiStalkRepository(ctx: Context) {
     var onboardingDone: Boolean
         get() = prefs.getBoolean("onboarding_done", false)
         set(v) { prefs.edit().putBoolean("onboarding_done", v).apply() }
+    var skippedUpdateTag: String
+        get() = prefs.getString("skipped_update_tag", "") ?: ""
+        set(v) { prefs.edit().putString("skipped_update_tag", v).apply() }
 
     suspend fun seedIfNeeded() {
         if (db.appDao().count() == 0) {

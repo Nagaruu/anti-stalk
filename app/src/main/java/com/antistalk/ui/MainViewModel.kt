@@ -3,6 +3,8 @@ package com.antistalk.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.antistalk.BuildConfig
+import com.antistalk.core.AppUpdater
 import com.antistalk.core.suggestKeywords
 import com.antistalk.data.AntiStalkRepository
 import com.antistalk.data.local.entity.AvoidedPerson
@@ -26,6 +28,11 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
     val stats = MutableStateFlow(AntiStalkRepository.TodayStats(0, 0, 0, "", 0))
     val roastLevel = MutableStateFlow(repo.roastLevel)
     val onboardingDone = MutableStateFlow(repo.onboardingDone)
+
+    // Self-update state
+    val updateAvailable = MutableStateFlow<AppUpdater.UpdateInfo?>(null)
+    val checkingUpdate = MutableStateFlow(false)
+    val versionLabel = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
 
     init {
         viewModelScope.launch {
@@ -90,6 +97,26 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
     }
 
     fun suggestedKeywords(name: String): List<String> = suggestKeywords(name)
+
+    /** Checks GitHub Releases for a newer tag. Silent unless [force] (manual tap). */
+    fun checkUpdate(force: Boolean = false) {
+        if (checkingUpdate.value) return
+        viewModelScope.launch {
+            checkingUpdate.value = true
+            try {
+                val info = AppUpdater.check(BuildConfig.VERSION_CODE)
+                updateAvailable.value =
+                    if (info != null && (force || repo.skippedUpdateTag != info.tag)) info else null
+            } finally {
+                checkingUpdate.value = false
+            }
+        }
+    }
+
+    fun skipUpdate() {
+        updateAvailable.value?.let { repo.skippedUpdateTag = it.tag }
+        updateAvailable.value = null
+    }
 }
 
 class MainViewModelFactory(private val repo: AntiStalkRepository) : ViewModelProvider.Factory {

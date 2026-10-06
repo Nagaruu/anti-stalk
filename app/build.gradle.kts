@@ -12,8 +12,10 @@ android {
         applicationId = "com.antistalk"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0-mvp"
+        // BUILD_NUMBER comes from CI: tag number for releases (vN), run number otherwise.
+        val buildNumber = System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 1
+        versionCode = buildNumber
+        versionName = "0.1.$buildNumber"
     }
 
     buildTypes {
@@ -34,6 +36,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"

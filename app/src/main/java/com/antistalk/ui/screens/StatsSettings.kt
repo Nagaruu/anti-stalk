@@ -66,6 +66,7 @@ fun StatsScreen(vm: MainViewModel) {
 @Composable
 fun SettingsScreen(vm: MainViewModel) {
     val level by vm.roastLevel.collectAsState()
+    val checking by vm.checkingUpdate.collectAsState()
     Column(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Cài đặt", fontSize = 28.sp, fontWeight = FontWeight.Black)
         Text("Mức độ cà khịa", fontWeight = FontWeight.SemiBold)
@@ -77,6 +78,12 @@ fun SettingsScreen(vm: MainViewModel) {
         ).forEach { (lv, label) ->
             FilterChip(selected = level == lv, onClick = { vm.setRoastLevel(lv) }, label = { Text(label) })
         }
+        Spacer(Modifier.height(8.dp))
+        Text("Phiên bản: ${vm.versionLabel}", fontWeight = FontWeight.SemiBold)
+        OutlinedButton(
+            onClick = { vm.checkUpdate(force = true) },
+            enabled = !checking
+        ) { Text(if (checking) "ĐANG KIỂM TRA…" else "KIỂM TRA CẬP NHẬT") }
         Spacer(Modifier.height(8.dp))
         Text("Ngôn ngữ theo máy (vi/en có sẵn). Privacy: dữ liệu chỉ trên máy.", fontSize = 13.sp, color = Color.Gray)
         Spacer(Modifier.height(8.dp))

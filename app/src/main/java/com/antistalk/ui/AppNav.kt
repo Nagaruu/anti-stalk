@@ -6,21 +6,26 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.antistalk.core.AppUpdater
 import com.antistalk.ui.screens.HomeScreen
 import com.antistalk.ui.screens.OnboardingScreen
 import com.antistalk.ui.screens.PermissionsScreen
@@ -49,6 +54,34 @@ fun AppNav(vm: MainViewModel) {
 @Composable
 private fun MainTabs(vm: MainViewModel, goal: String) {
     var tab by remember { mutableStateOf(0) }
+    val ctx = LocalContext.current
+    val update by vm.updateAvailable.collectAsState()
+
+    // Silent check once per app start; dialog only shows when an update exists.
+    LaunchedEffect(Unit) { vm.checkUpdate() }
+
+    if (update != null) {
+        AlertDialog(
+            onDismissRequest = { vm.skipUpdate() },
+            title = { Text("Có đồ mới nè 😏") },
+            text = {
+                Text(
+                    "Bản ${update!!.tag} có rồi (bạn đang dùng ${vm.versionLabel}). " +
+                        "Update không bạn thân?\n\n${update!!.notes.take(300)}"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    AppUpdater.downloadAndInstall(ctx, update!!.apkUrl)
+                    vm.skipUpdate()
+                }) { Text("CẬP NHẬT") }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.skipUpdate() }) { Text("ĐỂ SAU") }
+            }
+        )
+    }
+
     Scaffold(
         bottomBar = {
             NavigationBar {
