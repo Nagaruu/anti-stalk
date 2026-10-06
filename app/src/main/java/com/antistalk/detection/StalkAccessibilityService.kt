@@ -109,12 +109,26 @@ class StalkAccessibilityService : AccessibilityService() {
     }
 
     companion object {
-        fun isEnabled(service: android.content.Context): Boolean {
-            val expected = "${service.packageName}/.detection.StalkAccessibilityService"
+        /**
+         * The system stores enabled services as flattened components with the
+         * FULL class name, e.g.
+         * "com.antistalk.debug/com.antistalk.detection.StalkAccessibilityService".
+         * Never match against the ".detection.…" shorthand — it never appears there.
+         */
+        fun isEnabled(ctx: android.content.Context): Boolean {
             val enabled = Settings.Secure.getString(
-                service.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+                ctx.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
             ) ?: return false
-            return enabled.contains(expected, ignoreCase = true)
+            val pkg = ctx.packageName
+            val fullCls = StalkAccessibilityService::class.java.name
+            return enabled.split(':').any { entry ->
+                val slash = entry.indexOf('/')
+                if (slash < 0) return@any false
+                val ePkg = entry.substring(0, slash)
+                val eCls = entry.substring(slash + 1)
+                ePkg.equals(pkg, ignoreCase = true) &&
+                    (eCls == fullCls || eCls.endsWith(".StalkAccessibilityService"))
+            }
         }
     }
 }

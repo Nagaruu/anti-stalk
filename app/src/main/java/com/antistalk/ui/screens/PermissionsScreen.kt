@@ -13,24 +13,39 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.antistalk.detection.OverlayManager
 import com.antistalk.detection.StalkAccessibilityService
 
 @Composable
 fun PermissionsScreen(onDone: () -> Unit) {
     val ctx = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     var tick by remember { mutableIntStateOf(0) }
-    @Suppress("UNUSED_EXPRESSION")
-    tick.let { }
+
+    // Auto re-check whenever the user returns from system Settings —
+    // no need to tap "check again" manually.
+    DisposableEffect(lifecycle) {
+        val obs = LifecycleEventObserver { _, e ->
+            if (e == Lifecycle.Event.ON_RESUME) tick++
+        }
+        lifecycle.addObserver(obs)
+        onDispose { lifecycle.removeObserver(obs) }
+    }
+
     val accOn = remember(tick) { StalkAccessibilityService.isEnabled(ctx) }
     val overlayOn = remember(tick) { OverlayManager.canDrawOverlays(ctx) }
 
