@@ -50,7 +50,7 @@ fun PermissionsScreen(onDone: () -> Unit) {
     val overlayOn = remember(tick) { OverlayManager.canDrawOverlays(ctx) }
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
-        Text("Cấp quyền để bắt quả tang", fontWeight = FontWeight.Black, fontSize = 22.sp)
+        Text("Cấp quyền để bắt quả tangg", fontWeight = FontWeight.Black, fontSize = 22.sp)
         Spacer(Modifier.height(8.dp))
         Text("1) Accessibility: thấy tên bạn gõ trong app đã chọn.\n2) Vẽ trên app khác: hiện màn hình cà khịa đúng lúc.")
         Spacer(Modifier.height(16.dp))
