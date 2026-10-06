@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  IMPORTANT: isAccessibilityTool is intentionally NOT set (=false).
+  Anti-Stalk is not a disability-support tool, so on Google Play it must go
+  through prominent disclosure + Play Console accessibility declaration.
+  For MVP we distribute via sideload APK, Play review comes later.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeViewTextChanged|typeViewFocused|typeWindowContentChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/accessibility_description"
+    android:notificationTimeout="300" />
