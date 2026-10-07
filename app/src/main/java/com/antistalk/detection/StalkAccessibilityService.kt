@@ -33,6 +33,7 @@ class StalkAccessibilityService : AccessibilityService() {
     private var lastKeystrokeMatchAt: MutableMap<String, Long> = mutableMapOf()
     private var lastSubmitAt: MutableMap<String, Long> = mutableMapOf()
     private var lastFocusReadAt: Long = 0L
+    private var lastRawLogAt: Long = 0L
 
     override fun onServiceConnected() {
         repo = AntiStalkRepository(this)
@@ -67,6 +68,16 @@ class StalkAccessibilityService : AccessibilityService() {
         val typed: CharSequence? = try { detector.searchTextFromEvent(event) } catch (_: Exception) { null }
         val isWindowChange = type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
         val typeName = try { AccessibilityEvent.eventTypeToString(type) } catch (_: Exception) { type.toString() }
+
+        // DEBUG: prove events arrive at all — including ones carrying no text.
+        // Without this line, "Facebook sends nothing" and "text extraction
+        // fails" look identical in the log. Throttled: content-change storms.
+        if (System.currentTimeMillis() - lastRawLogAt > RAW_LOG_THROTTLE_MS &&
+            (typed == null || typed.length < 3)
+        ) {
+            lastRawLogAt = System.currentTimeMillis()
+            DetectionLog.add(pkg, typeName, typed?.toString()?.take(24) ?: "—", "seen-no-text")
+        }
 
         if (keywords.isEmpty() || !enabledPkgs.contains(pkg)) {
             // Cold cache (e.g. person just added): refresh, then process
@@ -119,8 +130,34 @@ class StalkAccessibilityService : AccessibilityService() {
             val text = focused?.text?.toString()
             if (!text.isNullOrBlank() && text.length >= 3) {
                 processTyped(pkg, text, "focused")
+                return
             }
+            // Facebook can drop input focus while the keyboard/autocomplete is
+            // open — scan every editable node instead of giving up.
+            val editable = firstEditableText(root)
+            if (editable != null) processTyped(pkg, editable, "editable")
         } catch (_: Exception) { }
+    }
+
+    /** BFS the first editable node with usable text. Bounded: trees are huge. */
+    private fun firstEditableText(root: AccessibilityNodeInfo): String? {
+        var best: String? = null
+        var seen = 0
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        while (queue.isNotEmpty() && seen < 80) {
+            val n = queue.removeFirst()
+            seen++
+            val editable = try { n.isEditable } catch (_: Exception) { false }
+            if (editable || n.className?.contains("EditText") == true) {
+                val t = n.text?.toString()
+                if (best == null && !t.isNullOrBlank() && t.length >= 3) best = t
+            }
+            for (i in 0 until n.childCount) {
+                try { n.getChild(i)?.let { queue.add(it) } } catch (_: Exception) { }
+            }
+        }
+        return best
     }
 
     private fun processTyped(pkg: String, typed: CharSequence, src: String): Matcher.Match? {
@@ -205,6 +242,8 @@ class StalkAccessibilityService : AccessibilityService() {
         const val SUBMIT_COOLDOWN_MS = 5_000L
         /** Min gap between focused-node reads (content-changed fires constantly). */
         const val FOCUS_READ_THROTTLE_MS = 400L
+        /** Min gap between "event seen but no text" debug lines. */
+        const val RAW_LOG_THROTTLE_MS = 500L
 
         /**
          * The system stores enabled services as flattened components with the

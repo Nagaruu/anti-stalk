@@ -6,6 +6,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
@@ -18,7 +20,9 @@ import com.antistalk.data.AntiStalkRepository
 import com.antistalk.ui.intervention.InterventionState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -31,8 +35,14 @@ object OverlayManager {
     private var root: FrameLayout? = null
     private var wm: WindowManager? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var autoHideJob: Job? = null
     var current: InterventionState? = null
         private set
+
+    /** Overlay never stays forever: a stuck card would block every later show(). */
+    const val AUTO_HIDE_MS = 45_000L
+
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     fun canDrawOverlays(ctx: Context): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) Settings.canDrawOverlays(ctx) else true
@@ -64,9 +74,29 @@ object OverlayManager {
         ctx: Context, eventId: Long, personName: String, packageName: String,
         trigger: String, confidence: String, countToday: Int
     ) {
-        if (root != null) return
         val appCtx = ctx.applicationContext
-        if (!canDrawOverlays(appCtx)) return
+        // Real triggers arrive from Dispatchers.IO (see StalkAccessibilityService
+        // .fireTrigger). WindowManager.addView must run on a Looper thread — on a
+        // background thread it throws, which used to be swallowed by `catch`,
+        // so a perfectly matched roast never appeared. The TEST button worked
+        // only because it is clicked on the main thread.
+        mainHandler.post {
+            showNow(appCtx, eventId, personName, packageName, trigger, confidence, countToday)
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun showNow(
+        appCtx: Context, eventId: Long, personName: String, packageName: String,
+        trigger: String, confidence: String, countToday: Int
+    ) {
+        if (!canDrawOverlays(appCtx)) {
+            DetectionLog.add("overlay", "show", personName.take(24), "no-overlay-permission")
+            return
+        }
+        // A previous card never got dismissed: replace it instead of
+        // blocking every later roast forever (root != null used to return).
+        if (root != null) hideNow()
         val vi = Locale.getDefault().language == "vi"
         current = InterventionState(eventId, personName, packageName, trigger, confidence, countToday)
 
@@ -134,12 +164,26 @@ object OverlayManager {
         try {
             manager.addView(bg, params)
             root = bg
-        } catch (_: Exception) {
+            autoHideJob?.cancel()
+            autoHideJob = scope.launch {
+                delay(AUTO_HIDE_MS)
+                hide()
+            }
+        } catch (e: Exception) {
             current = null; wm = null
+            DetectionLog.add("overlay", "show", personName.take(24), "addView-failed:${e.javaClass.simpleName}")
         }
     }
 
+    /** Thread-safe: hops to the main thread if needed (WM views live there). */
     fun hide() {
+        if (Looper.myLooper() == Looper.getMainLooper()) hideNow()
+        else mainHandler.post { hideNow() }
+    }
+
+    private fun hideNow() {
+        autoHideJob?.cancel()
+        autoHideJob = null
         try { root?.let { wm?.removeView(it) } } catch (_: Exception) { }
         root = null; wm = null; current = null
     }
