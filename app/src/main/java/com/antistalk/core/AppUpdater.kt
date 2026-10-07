@@ -38,6 +38,17 @@ object AppUpdater {
 
     data class UpdateInfo(val tag: String, val tagNumber: Int, val notes: String, val apkUrl: String)
 
+    /**
+     * Honest result: [Unreachable] means the API itself failed (offline,
+     * private repo, no releases yet) — NOT "up to date". Callers must show
+     * this differently instead of claiming the newest version is installed.
+     */
+    sealed interface CheckResult {
+        data class Update(val info: UpdateInfo) : CheckResult
+        data object UpToDate : CheckResult
+        data object Unreachable : CheckResult
+    }
+
     // Separate prefs file so "xóa toàn bộ dữ liệu local" doesn't nuke it.
     private const val PREFS_UPDATE = "antistalk_update"
     private const val KEY_DOWNLOAD_ID = "download_id"
@@ -143,19 +154,19 @@ object AppUpdater {
         }
     }
 
-    suspend fun check(currentVersionCode: Int): UpdateInfo? = withContext(Dispatchers.IO) {
+    suspend fun checkResult(currentVersionCode: Int): CheckResult = withContext(Dispatchers.IO) {
         try {
             val conn = (URL(API_LATEST).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 10_000
                 readTimeout = 10_000
                 setRequestProperty("Accept", "application/vnd.github+json")
             }
-            if (conn.responseCode != 200) return@withContext null
+            if (conn.responseCode != 200) return@withContext CheckResult.Unreachable
             val json = JSONObject(conn.inputStream.bufferedReader().readText())
             val tag = json.optString("tag_name", "")
-            val num = tag.removePrefix("v").toIntOrNull() ?: return@withContext null
-            if (num <= currentVersionCode) return@withContext null
-            val assets = json.optJSONArray("assets") ?: return@withContext null
+            val num = tag.removePrefix("v").toIntOrNull() ?: return@withContext CheckResult.Unreachable
+            if (num <= currentVersionCode) return@withContext CheckResult.UpToDate
+            val assets = json.optJSONArray("assets") ?: return@withContext CheckResult.Unreachable
             var apkUrl: String? = null
             for (i in 0 until assets.length()) {
                 val a = assets.getJSONObject(i)
@@ -164,12 +175,16 @@ object AppUpdater {
                     break
                 }
             }
-            if (apkUrl.isNullOrBlank()) return@withContext null
-            UpdateInfo(tag, num, json.optString("body", ""), apkUrl)
+            if (apkUrl.isNullOrBlank()) return@withContext CheckResult.Unreachable
+            CheckResult.Update(UpdateInfo(tag, num, json.optString("body", ""), apkUrl))
         } catch (_: Exception) {
-            null // offline or API hiccup: silently no update
+            CheckResult.Unreachable // offline or API hiccup
         }
     }
+
+    /** Nullable wrapper for callers that only care about available updates. */
+    suspend fun check(currentVersionCode: Int): UpdateInfo? =
+        (checkResult(currentVersionCode) as? CheckResult.Update)?.info
 
     fun canInstall(ctx: Context): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

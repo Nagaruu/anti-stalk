@@ -40,6 +40,8 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
     // Self-update state (legacy manual dialog path)
     val updateAvailable = MutableStateFlow<AppUpdater.UpdateInfo?>(null)
     val checkingUpdate = MutableStateFlow(false)
+    /** True when the last check couldn't reach the API at all (offline/private repo). */
+    val updateCheckFailed = MutableStateFlow(false)
     val versionLabel = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
 
     // Near-auto update state machine: Idle -> Downloading -> ReadyToInstall.
@@ -202,7 +204,20 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
                         updateAvailable.value = null
                     }
                 }
-                val info = AppUpdater.check(BuildConfig.VERSION_CODE)
+                val res = AppUpdater.checkResult(BuildConfig.VERSION_CODE)
+                if (res is AppUpdater.CheckResult.Unreachable) {
+                    updateCheckFailed.value = true
+                    if (force) {
+                        Toast.makeText(
+                            ctx,
+                            "Không kiểm tra được cập nhật (mất mạng hoặc repo chưa Public)",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    return@launch
+                }
+                updateCheckFailed.value = false
+                val info = (res as? AppUpdater.CheckResult.Update)?.info
                 if (info == null) {
                     if (force && updateState.value is UpdateState.Idle) {
                         Toast.makeText(ctx, "Đang dùng bản mới nhất 😌", Toast.LENGTH_SHORT).show()

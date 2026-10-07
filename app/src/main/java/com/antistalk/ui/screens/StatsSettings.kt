@@ -97,6 +97,7 @@ fun SettingsScreen(vm: MainViewModel) {
     val themeMode by vm.themeMode.collectAsState()
     val eventLog by vm.eventLog.collectAsState()
     val kwsPreview by vm.keywordsPreview.collectAsState()
+    val checkFailed by vm.updateCheckFailed.collectAsState()
     val ctx = LocalContext.current
     val cs = MaterialTheme.colorScheme
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -153,6 +154,13 @@ fun SettingsScreen(vm: MainViewModel) {
             onClick = { vm.checkUpdate(ctx, force = true) },
             enabled = !checking
         ) { Text(if (checking) "ĐANG KIỂM TRA…" else "KIỂM TRA CẬP NHẬT") }
+        if (checkFailed) {
+            Text(
+                "⚠️ Không kiểm tra được cập nhật (mất mạng, hoặc repo GitHub chưa Public / chưa có Release).",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
         Spacer(Modifier.height(8.dp))
         Text(
             "Ngôn ngữ theo máy (vi/en có sẵn). Privacy: dữ liệu chỉ trên máy.",
