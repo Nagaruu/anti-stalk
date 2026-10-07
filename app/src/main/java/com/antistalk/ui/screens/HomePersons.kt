@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -42,8 +43,10 @@ import com.antistalk.ui.MainViewModel
 @Composable
 fun HomeScreen(vm: MainViewModel) {
     val stats by vm.stats.collectAsState()
+    val persons by vm.persons.collectAsState()
     val apps by vm.apps.collectAsState()
     val diag by vm.detectionStatus.collectAsState()
+    val cs = MaterialTheme.colorScheme
     val ctx = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var tick by remember { mutableIntStateOf(0) }
@@ -68,9 +71,19 @@ fun HomeScreen(vm: MainViewModel) {
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Text("Hôm nay", fontSize = 30.sp, fontWeight = FontWeight.Black)
-            Text(subtitle, color = androidx.compose.ui.graphics.Color.Gray)
+            Text("Hôm nay", style = MaterialTheme.typography.displayMedium)
+            Text(subtitle, color = cs.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
+        }
+        if (persons.isEmpty()) {
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Chưa né ai cả. Sang tab Né ai thêm 1 người để bắt đầu. 😌",
+                        modifier = Modifier.padding(18.dp), color = cs.onSurfaceVariant
+                    )
+                }
+            }
         }
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -82,7 +95,7 @@ fun HomeScreen(vm: MainViewModel) {
             }
         }
         item {
-            Text("Phát hiện có chạy không", fontWeight = FontWeight.SemiBold)
+            Text("Phát hiện có chạy không", style = MaterialTheme.typography.titleMedium)
         }
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -103,7 +116,7 @@ fun HomeScreen(vm: MainViewModel) {
                     if (!diag.serviceEnabled || !diag.canOverlay || diag.personCount == 0 || diag.enabledAppCount == 0) {
                         Text(
                             "Chưa đủ điều kiện nên màn hình cà khịa không hiện. Bật đủ rồi mở Facebook gõ tên người cần né nhé.",
-                            fontSize = 13.sp, color = androidx.compose.ui.graphics.Color.Gray
+                            style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
                         )
                     }
                     TextButton(onClick = { tick++; vm.refreshStats() }) { Text("Kiểm tra lại") }
@@ -111,13 +124,13 @@ fun HomeScreen(vm: MainViewModel) {
             }
         }
         item {
-            Text("App đang theo dõi", fontWeight = FontWeight.SemiBold)
+            Text("App đang theo dõi", style = MaterialTheme.typography.titleMedium)
         }
         items(apps, key = { it.packageName }) { app ->
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(app.label, fontWeight = FontWeight.Medium)
-                    Text(app.packageName, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Gray)
+                    Text(app.packageName, style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
                 }
                 Switch(checked = app.enabled, onCheckedChange = { vm.toggleApp(app.packageName, app.label, it) })
             }
@@ -131,14 +144,15 @@ fun HomeScreen(vm: MainViewModel) {
 @Composable
 fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
     val persons by vm.persons.collectAsState()
+    val cs = MaterialTheme.colorScheme
     var name by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var extra by remember { mutableStateOf("") }
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Text("Người cần tránh", fontSize = 28.sp, fontWeight = FontWeight.Black)
-            Text("Free: 1 người · 2 app. Thêm nữa tính sau.", color = androidx.compose.ui.graphics.Color.Gray)
+            Text("Người cần tránh", style = MaterialTheme.typography.headlineSmall)
+            Text("Free: 1 người · 2 app. Thêm nữa tính sau.", color = cs.onSurfaceVariant)
         }
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -147,7 +161,10 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                     OutlinedTextField(value = extra, onValueChange = { extra = it }, label = { Text("Từ khóa thêm, cách nhau bằng dấu phẩy") }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = note, onValueChange = { note = it }, label = { Text("Ghi chú (tùy chọn)") }, modifier = Modifier.fillMaxWidth())
                     val sug = remember(name) { vm.suggestedKeywords(name) }
-                    if (name.isNotBlank()) Text("Tự nhận diện: ${sug.joinToString(", ")}", fontSize = 12.sp)
+                    if (name.isNotBlank()) Text(
+                        "Tự nhận diện: ${sug.joinToString(", ")}",
+                        style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
+                    )
                     Button(
                         enabled = name.isNotBlank(),
                         onClick = {
@@ -165,7 +182,7 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(p.displayName, fontWeight = FontWeight.Bold)
                         if (p.note.isNotBlank()) Text(p.note, fontSize = 13.sp)
-                        Text(p.goal, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Gray)
+                        Text(p.goal, style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
                     }
                     TextButton(onClick = { vm.deletePerson(p.id) }) { Text("Xóa") }
                 }

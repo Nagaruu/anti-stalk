@@ -52,6 +52,12 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
         updateWifiOnly.value = v
     }
 
+    val themeMode = MutableStateFlow(repo.themeMode)
+    fun setThemeMode(m: String) {
+        repo.themeMode = m
+        themeMode.value = m
+    }
+
     init {
         viewModelScope.launch {
             repo.seedIfNeeded()

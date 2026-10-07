@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -51,6 +50,7 @@ fun InterventionOverlay(
     val s = state ?: return
     var reason by remember { mutableStateOf("") }
     var step by remember { mutableStateOf(0) } // 0 = roast, 1 = why
+    val cs = MaterialTheme.colorScheme
     val roast = remember(s.personName, s.countToday, roastLevel, vi) {
         RoastBank.pick(roastLevel, s.countToday.coerceAtLeast(1), s.personName, vi)
     }
@@ -62,7 +62,7 @@ fun InterventionOverlay(
         Card(
             modifier = Modifier.fillMaxWidth().padding(24.dp),
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = cs.surface),
             elevation = CardDefaults.cardElevation(12.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
@@ -70,15 +70,15 @@ fun InterventionOverlay(
                 Spacer(Modifier.height(8.dp))
                 Text(
                     if (vi) "Lại tìm người ta à?" else "Looking them up again?",
-                    fontSize = 26.sp, fontWeight = FontWeight.Black, color = Color(0xFF14101F)
+                    style = MaterialTheme.typography.headlineSmall, color = cs.onSurface
                 )
                 Spacer(Modifier.height(8.dp))
-                Text(roast, fontSize = 16.sp, color = Color(0xFF4A4458))
+                Text(roast, fontSize = 16.sp, color = cs.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     if (vi) "Lần thứ ${s.countToday.coerceAtLeast(1)} hôm nay · ${s.personName}"
                     else "#${s.countToday.coerceAtLeast(1)} today · ${s.personName}",
-                    fontSize = 13.sp, color = Color(0xFF8A8496)
+                    style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
                 )
                 Spacer(Modifier.height(12.dp))
 
@@ -88,8 +88,7 @@ fun InterventionOverlay(
                             onDecision(s.eventId, "STOPPED", "")
                             step = 1
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
+                        modifier = Modifier.fillMaxWidth()
                     ) { Text(if (vi) "THÔI, TÔI ĐI RA" else "NAH, I'M OUT") }
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(
@@ -131,7 +130,7 @@ fun InterventionOverlay(
                 Text(
                     if (vi) "Không cấm bạn. Chỉ bắt bạn nghĩ một lần."
                     else "Not blocking you. Just one second of thinking.",
-                    fontSize = 12.sp, color = Color(0xFF8A8496),
+                    style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp)
                 )
             }

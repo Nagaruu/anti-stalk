@@ -34,6 +34,10 @@ class AntiStalkRepository(ctx: Context) {
     var updateWifiOnly: Boolean
         get() = prefs.getBoolean("update_wifi_only", true)
         set(v) { prefs.edit().putBoolean("update_wifi_only", v).apply() }
+    /** "system" | "light" | "dark" */
+    var themeMode: String
+        get() = prefs.getString("theme_mode", "system") ?: "system"
+        set(v) { prefs.edit().putString("theme_mode", v).apply() }
 
     suspend fun seedIfNeeded() {
         if (db.appDao().count() == 0) {

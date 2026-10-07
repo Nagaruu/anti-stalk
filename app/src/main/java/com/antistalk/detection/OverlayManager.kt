@@ -37,6 +37,20 @@ object OverlayManager {
     fun canDrawOverlays(ctx: Context): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) Settings.canDrawOverlays(ctx) else true
 
+    /** Follows the same Sáng/Tối/Theo hệ thống setting as the in-app theme. */
+    private fun isDarkOverlay(appCtx: Context): Boolean {
+        return try {
+            when (appCtx.getSharedPreferences("antistalk", Context.MODE_PRIVATE)
+                .getString("theme_mode", "system")) {
+                "dark" -> true
+                "light" -> false
+                else -> (appCtx.resources.configuration.uiMode and
+                    android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                    android.content.res.Configuration.UI_MODE_NIGHT_YES
+            }
+        } catch (_: Exception) { false }
+    }
+
     fun openOverlaySettings(ctx: Context) {
         ctx.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -57,6 +71,10 @@ object OverlayManager {
         val prefs = appCtx.getSharedPreferences("antistalk", Context.MODE_PRIVATE)
         val level = prefs.getInt("roast_level", 2)
         val roast = RoastBank.pick(level, countToday.coerceAtLeast(1), personName, vi)
+        val dark = isDarkOverlay(appCtx)
+        val cardBg = if (dark) "#1E1B30" else "#FFFFFF"
+        val titleFg = if (dark) "#F2EFFA" else "#14101F"
+        val bodyFg = if (dark) "#B9B3CC" else "#4A4458"
 
         val manager = appCtx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         wm = manager
@@ -67,20 +85,20 @@ object OverlayManager {
         }
         val card = LinearLayout(appCtx).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor(cardBg))
             setPadding(56, 56, 56, 56)
         }
         val emoji = TextView(appCtx).apply { text = "😏"; textSize = 40f }
         val title = TextView(appCtx).apply {
             text = if (vi) "Lại tìm người ta à?" else "Looking them up again?"
             textSize = 24f
-            setTextColor(Color.parseColor("#14101F"))
+            setTextColor(Color.parseColor(titleFg))
         }
         val body = TextView(appCtx).apply {
             text = roast + "\n" + if (vi) "Lần thứ ${countToday.coerceAtLeast(1)} hôm nay · $personName"
             else "#${countToday.coerceAtLeast(1)} today · $personName"
             textSize = 15f
-            setTextColor(Color.parseColor("#4A4458"))
+            setTextColor(Color.parseColor(bodyFg))
         }
         val btnOut = Button(appCtx).apply { text = if (vi) "THÔI, TÔI ĐI RA" else "NAH, I'M OUT" }
         val btnStay = Button(appCtx).apply { text = if (vi) "TÔI VẪN MUỐN XEM" else "I STILL WANT TO SEE" }

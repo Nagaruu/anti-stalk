@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,7 +17,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,16 +24,17 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun OnboardingScreen(onDone: (goal: String) -> Unit) {
     var goal by remember { mutableStateOf("Người yêu cũ") }
+    val cs = MaterialTheme.colorScheme
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
         Text("🛡️", fontSize = 48.sp)
-        Text("Anti-Stalk", fontSize = 36.sp, fontWeight = FontWeight.Black)
+        Text("Anti-Stalk", style = MaterialTheme.typography.displayMedium)
         Spacer(Modifier.height(8.dp))
         Text(
             "Không cấm bạn. Chỉ bắt bạn suy nghĩ một lần trước khi stalk người yêu cũ / crush.",
-            fontSize = 16.sp, color = Color(0xFF4A4458)
+            fontSize = 16.sp, color = cs.onSurfaceVariant
         )
         Spacer(Modifier.height(16.dp))
         Text("Bạn muốn ngừng stalk ai?", fontWeight = FontWeight.SemiBold)
@@ -51,13 +50,12 @@ fun OnboardingScreen(onDone: (goal: String) -> Unit) {
         Spacer(Modifier.height(16.dp))
         Text(
             "App dùng Accessibility để thấy TÊN bạn gõ trong app đã chọn. Không đọc tin nhắn, không cần login, xử lý trên máy.",
-            fontSize = 13.sp, color = Color(0xFF6B6577)
+            style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
         )
         Spacer(Modifier.height(16.dp))
         Button(
             onClick = { onDone(goal) },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
+            modifier = Modifier.fillMaxWidth()
         ) { Text("BẮT ĐẦU") }
     }
 }

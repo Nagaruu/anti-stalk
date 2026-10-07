@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -22,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -50,7 +50,7 @@ fun PermissionsScreen(onDone: () -> Unit) {
     val overlayOn = remember(tick) { OverlayManager.canDrawOverlays(ctx) }
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
-        Text("Cấp quyền để bắt quả tangg", fontWeight = FontWeight.Black, fontSize = 22.sp)
+        Text("Cấp quyền để bắt quả tang", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(8.dp))
         Text("1) Accessibility: thấy tên bạn gõ trong app đã chọn.\n2) Vẽ trên app khác: hiện màn hình cà khịa đúng lúc.")
         Spacer(Modifier.height(16.dp))
