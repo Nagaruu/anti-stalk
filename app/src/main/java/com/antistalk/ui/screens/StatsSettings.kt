@@ -14,12 +14,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,6 +70,9 @@ fun StatsScreen(vm: MainViewModel) {
 fun SettingsScreen(vm: MainViewModel) {
     val level by vm.roastLevel.collectAsState()
     val checking by vm.checkingUpdate.collectAsState()
+    val updState by vm.updateState.collectAsState()
+    val wifiOnly by vm.updateWifiOnly.collectAsState()
+    val ctx = LocalContext.current
     Column(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Cài đặt", fontSize = 28.sp, fontWeight = FontWeight.Black)
         Text("Mức độ cà khịa", fontWeight = FontWeight.SemiBold)
@@ -80,8 +86,22 @@ fun SettingsScreen(vm: MainViewModel) {
         }
         Spacer(Modifier.height(8.dp))
         Text("Phiên bản: ${vm.versionLabel}", fontWeight = FontWeight.SemiBold)
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Chỉ tải update qua Wi-Fi", fontWeight = FontWeight.Medium)
+                Text("Tắt để cho tải bằng 4G", fontSize = 12.sp, color = Color.Gray)
+            }
+            Switch(checked = wifiOnly, onCheckedChange = { vm.setUpdateWifiOnly(it) })
+        }
+        when (val s = updState) {
+            is MainViewModel.UpdateState.Downloading ->
+                Text("Đang tải bản ${s.tag} trong nền… cứ dùng app bình thường.", fontSize = 13.sp, color = Color.Gray)
+            is MainViewModel.UpdateState.ReadyToInstall ->
+                OutlinedButton(onClick = { vm.openDownloadedInstaller(ctx) }) { Text("CÀI ĐẶT BẢN ${s.info.tag}") }
+            else -> Unit
+        }
         OutlinedButton(
-            onClick = { vm.checkUpdate(force = true) },
+            onClick = { vm.checkUpdate(ctx, force = true) },
             enabled = !checking
         ) { Text(if (checking) "ĐANG KIỂM TRA…" else "KIỂM TRA CẬP NHẬT") }
         Spacer(Modifier.height(8.dp))

@@ -56,9 +56,19 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
     var tab by remember { mutableStateOf(0) }
     val ctx = LocalContext.current
     val update by vm.updateAvailable.collectAsState()
+    val updState by vm.updateState.collectAsState()
 
-    // Silent check once per app start; dialog only shows when an update exists.
-    LaunchedEffect(Unit) { vm.checkUpdate() }
+    // Silent check once per app start (auto-downloads in background);
+    // dialog only shows when an update exists.
+    LaunchedEffect(Unit) { vm.checkUpdate(ctx) }
+
+    // Near-auto update: download finished -> open the system installer
+    // by itself, once per tag. The user only taps the Install button.
+    LaunchedEffect(updState) {
+        if (updState is MainViewModel.UpdateState.ReadyToInstall) {
+            vm.consumeReadyToInstall(ctx)
+        }
+    }
 
     if (update != null) {
         AlertDialog(

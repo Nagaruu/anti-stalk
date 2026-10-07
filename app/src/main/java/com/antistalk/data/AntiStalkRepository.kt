@@ -31,6 +31,9 @@ class AntiStalkRepository(ctx: Context) {
     var skippedUpdateTag: String
         get() = prefs.getString("skipped_update_tag", "") ?: ""
         set(v) { prefs.edit().putString("skipped_update_tag", v).apply() }
+    var updateWifiOnly: Boolean
+        get() = prefs.getBoolean("update_wifi_only", true)
+        set(v) { prefs.edit().putBoolean("update_wifi_only", v).apply() }
 
     suspend fun seedIfNeeded() {
         if (db.appDao().count() == 0) {
