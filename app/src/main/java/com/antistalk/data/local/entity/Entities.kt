@@ -53,7 +53,7 @@ data class StalkEvent(
     val personId: Long?,
     val personName: String, // denormalized so stats survive deletion
     val packageName: String,
-    val triggerType: String, // SEARCH_INPUT | CHAT_TITLE | PROFILE_TITLE | MANUAL
+    val triggerType: String, // SEARCH_INPUT | SEARCH_SUBMITTED | PROFILE_TITLE | MANUAL
     val confidence: String, // HIGH | MEDIUM | LOW
     val decision: String, // STOPPED | CONTINUED | DISMISSED
     val reason: String = "", // NHO | TO_MO | CO_DON | NGUOI_MOI | BUON | KHONG_BIET

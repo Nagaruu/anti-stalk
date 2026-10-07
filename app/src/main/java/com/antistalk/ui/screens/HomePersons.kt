@@ -1,5 +1,7 @@
 package com.antistalk.ui.screens
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,39 +19,57 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.antistalk.detection.OverlayManager
 import com.antistalk.ui.MainViewModel
-import com.antistalk.ui.intervention.InterventionOverlay
-import com.antistalk.ui.intervention.InterventionState
 
 @Composable
 fun HomeScreen(vm: MainViewModel) {
     val stats by vm.stats.collectAsState()
-    val persons by vm.persons.collectAsState()
     val apps by vm.apps.collectAsState()
-    val roastLvl by vm.roastLevel.collectAsState()
-    var preview by remember { mutableStateOf<InterventionState?>(null) }
+    val diag by vm.detectionStatus.collectAsState()
+    val ctx = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var tick by remember { mutableIntStateOf(0) }
 
-    if (preview != null) {
-        InterventionOverlay(
-            state = preview, roastLevel = roastLvl,
-            onDecision = { _, _, _ -> }, onDone = { preview = null; vm.refreshStats() }
-        )
+    // Re-check system permissions every time the user comes back —
+    // no manual "check again" tap needed after granting in Settings.
+    DisposableEffect(lifecycle) {
+        val obs = LifecycleEventObserver { _, e ->
+            if (e == Lifecycle.Event.ON_RESUME) tick++
+        }
+        lifecycle.addObserver(obs)
+        onDispose { lifecycle.removeObserver(obs) }
+    }
+    LaunchedEffect(tick) { vm.refreshDetectionStatus(ctx) }
+
+    val subtitle = when {
+        stats.total == 0 -> "Sạch sẽ. Giữ phong độ này. 😌"
+        stats.continued > 0 -> "Vẫn tò mò à? Không sao, mai làm lại. 😏"
+        stats.stopped > 0 -> "Nể đấy. Dừng được hết. 💪"
+        else -> "Đã chặn vài lần, quyết định sau nhé."
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Text("Hôm nay", fontSize = 30.sp, fontWeight = FontWeight.Black)
-            Text("Tiến bộ đấy. 😏", color = androidx.compose.ui.graphics.Color.Gray)
+            Text(subtitle, color = androidx.compose.ui.graphics.Color.Gray)
             Spacer(Modifier.height(4.dp))
         }
         item {
@@ -58,6 +78,35 @@ fun HomeScreen(vm: MainViewModel) {
                     Text("${stats.total} lần muốn stalk", fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     Text("${stats.stopped} lần bạn đã dừng · ${stats.continued} lần vẫn vào xem")
                     if (stats.topName.isNotBlank()) Text("Trigger nhiều nhất: ${stats.topName} (${stats.topCount})")
+                }
+            }
+        }
+        item {
+            Text("Phát hiện có chạy không", fontWeight = FontWeight.SemiBold)
+        }
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Đọc màn hình: ${if (diag.serviceEnabled) "✅ đang bật" else "❌ chưa bật"}")
+                    Text("Vẽ trên app khác: ${if (diag.canOverlay) "✅ đã cấp" else "❌ chưa cấp"}")
+                    Text("Người đang né: ${diag.personCount} · Từ khóa: ${diag.keywordCount} · App bật: ${diag.enabledAppCount}")
+                    if (!diag.serviceEnabled) {
+                        Button(onClick = {
+                            ctx.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            })
+                        }) { Text("BẬT ĐỌC MÀN HÌNH") }
+                    }
+                    if (!diag.canOverlay) {
+                        Button(onClick = { OverlayManager.openOverlaySettings(ctx) }) { Text("CẤP QUYỀN VẼ OVERLAY") }
+                    }
+                    if (!diag.serviceEnabled || !diag.canOverlay || diag.personCount == 0 || diag.enabledAppCount == 0) {
+                        Text(
+                            "Chưa đủ điều kiện nên màn hình cà khịa không hiện. Bật đủ rồi mở Facebook gõ tên người cần né nhé.",
+                            fontSize = 13.sp, color = androidx.compose.ui.graphics.Color.Gray
+                        )
+                    }
+                    TextButton(onClick = { tick++; vm.refreshStats() }) { Text("Kiểm tra lại") }
                 }
             }
         }
@@ -74,15 +123,6 @@ fun HomeScreen(vm: MainViewModel) {
             }
         }
         item {
-            Text("Test ngay (không cần mở Facebook)", fontWeight = FontWeight.SemiBold)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = {
-                    val name = persons.firstOrNull()?.displayName ?: "Nguyễn Văn A"
-                    vm.previewTrigger(name, "com.facebook.katana")
-                    preview = InterventionState(-1, name, "com.facebook.katana", "MANUAL", "LOW", stats.total + 1)
-                }) { Text("GIẢ LẬP STALK") }
-                TextButton(onClick = { vm.refreshStats() }) { Text("Tải lại") }
-            }
             Spacer(Modifier.height(40.dp))
         }
     }

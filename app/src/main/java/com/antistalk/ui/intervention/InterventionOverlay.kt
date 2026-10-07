@@ -36,8 +36,9 @@ import com.antistalk.detection.OverlayManager
 import java.util.Locale
 
 /**
- * Shared composable: used both in the system overlay (from AccessibilityService)
- * and as an in-app preview on Home. Keep it dependency-light on purpose.
+ * Shared composable for the intervention card. The system overlay
+ * (from AccessibilityService via OverlayManager) mirrors this look
+ * with classic Views. Keep it dependency-light on purpose.
  */
 @Composable
 fun InterventionOverlay(
@@ -84,8 +85,7 @@ fun InterventionOverlay(
                 if (step == 0) {
                     Button(
                         onClick = {
-                            if (s.eventId > 0) onDecision(s.eventId, "STOPPED", "")
-                            else onDecision(-1, "STOPPED", "")
+                            onDecision(s.eventId, "STOPPED", "")
                             step = 1
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -119,17 +119,13 @@ fun InterventionOverlay(
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = {
-                            if (s.eventId > 0) onDecision(s.eventId, "STOPPED", reason)
+                            onDecision(s.eventId, "STOPPED", reason)
                             onDone()
                         }) { Text(if (vi) "Đi ra" else "Leave") }
                         TextButton(onClick = {
-                            if (s.eventId > 0) onDecision(s.eventId, "CONTINUED", reason)
+                            onDecision(s.eventId, "CONTINUED", reason)
                             onDone()
                         }) { Text(if (vi) "Vẫn xem" else "Continue") }
-                    }
-                    if (s.eventId <= 0) {
-                        // In-app preview has no real event id.
-                        TextButton(onClick = onDone) { Text(if (vi) "Đóng preview" else "Close preview") }
                     }
                 }
                 Text(

@@ -8,14 +8,21 @@ import android.view.accessibility.AccessibilityNodeInfo
  * FB/IG/Zalo/Messenger have unstable resource-ids that change per release.
  * Add app-specific subclasses later WITHOUT touching the service.
  *
- * Two signals only:
+ * Three signals:
  *  1. SEARCH_INPUT (HIGH confidence): text the user is typing in a search field.
- *  2. TITLE (MEDIUM confidence): chat/profile header title equals a keyword.
+ *  2. SEARCH_SUBMITTED (HIGH confidence): a new window opens shortly after
+ *     typing a matched name (user pressed search / opened results).
+ *  3. TITLE (MEDIUM confidence): chat/profile header title equals a keyword.
  */
 interface AppDetector {
     val packageName: String
     fun searchTextFromEvent(event: AccessibilityEvent): CharSequence?
-    fun titleFromRoot(root: AccessibilityNodeInfo?): CharSequence?
+    /**
+     * All plausible title-like texts on screen (short, single-line).
+     * The service matches each against keywords — never return just
+     * the first text, or a profile name further down the tree is missed.
+     */
+    fun titleCandidatesFromRoot(root: AccessibilityNodeInfo?): List<String>
 }
 
 class GenericDetector(override val packageName: String) : AppDetector {
@@ -33,32 +40,26 @@ class GenericDetector(override val packageName: String) : AppDetector {
         return null
     }
 
-    override fun titleFromRoot(root: AccessibilityNodeInfo?): CharSequence? {
-        if (root == null) return null
-        // Best-effort: walk first ~40 nodes, prefer short title-like texts.
+    override fun titleCandidatesFromRoot(root: AccessibilityNodeInfo?): List<String> {
+        if (root == null) return emptyList()
+        // Best-effort: walk first ~60 nodes, collect short title-like texts.
         // We deliberately do NOT dump message bodies — titles only.
+        val out = mutableListOf<String>()
         var seen = 0
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
-        while (queue.isNotEmpty() && seen < 40) {
+        while (queue.isNotEmpty() && seen < 60 && out.size < 20) {
             val n = queue.removeFirst()
             seen++
             val text = n.text?.toString()?.trim()
             if (!text.isNullOrEmpty() && text.length in 3..40 && !text.contains("\n")) {
-                // Caller decides whether it matches a keyword.
-                // Return candidate; service validates exact/contains match.
                 if (n.isClickable || n.className?.contains("TextView") == true) {
-                    // keep first candidate only if it matches — checked by service
-                    queue.addAll(childrenOf(n))
-                    // stash candidate via tag: simplest is to return first text and let service match
-                    // To keep code small we return the first plausible title text.
-                    recycleChildren(n, queue)
-                    return text
+                    if (out.none { it.equals(text, ignoreCase = true) }) out.add(text)
                 }
             }
             queue.addAll(childrenOf(n))
         }
-        return null
+        return out
     }
 
     private fun childrenOf(n: AccessibilityNodeInfo): List<AccessibilityNodeInfo> {
@@ -67,10 +68,6 @@ class GenericDetector(override val packageName: String) : AppDetector {
             try { n.getChild(i)?.let { out.add(it) } } catch (_: Exception) { }
         }
         return out
-    }
-
-    private fun recycleChildren(n: AccessibilityNodeInfo, queue: ArrayDeque<AccessibilityNodeInfo>) {
-        // no-op: nodes are recycled by framework; kept for clarity
     }
 }
 

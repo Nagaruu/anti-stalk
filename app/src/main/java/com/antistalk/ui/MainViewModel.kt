@@ -1,5 +1,6 @@
 package com.antistalk.ui
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -10,6 +11,8 @@ import com.antistalk.data.AntiStalkRepository
 import com.antistalk.data.local.entity.AvoidedPerson
 import com.antistalk.data.local.entity.MonitoredAppEntity
 import com.antistalk.data.local.entity.StalkEvent
+import com.antistalk.detection.OverlayManager
+import com.antistalk.detection.StalkAccessibilityService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -80,10 +83,25 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
         }
     }
 
-    fun previewTrigger(name: String, pkg: String) {
+    data class DetectionStatus(
+        val serviceEnabled: Boolean = false,
+        val canOverlay: Boolean = false,
+        val personCount: Int = 0,
+        val keywordCount: Int = 0,
+        val enabledAppCount: Int = 0
+    )
+
+    val detectionStatus = MutableStateFlow(DetectionStatus())
+
+    /** Re-read system permissions + local data so Home can show why nothing fires. */
+    fun refreshDetectionStatus(ctx: Context) {
         viewModelScope.launch {
-            repo.logEvent(name.ifBlank { "Nguyễn Văn A" }, null, pkg, "MANUAL", "LOW")
-            refreshStats()
+            val svc = try { StalkAccessibilityService.isEnabled(ctx) } catch (_: Exception) { false }
+            val ov = try { OverlayManager.canDrawOverlays(ctx) } catch (_: Exception) { false }
+            val persons = try { repo.personsOnce().size } catch (_: Exception) { 0 }
+            val kws = try { repo.keywordsOnce().size } catch (_: Exception) { 0 }
+            val apps = try { repo.enabledPackagesOnce().size } catch (_: Exception) { 0 }
+            detectionStatus.value = DetectionStatus(svc, ov, persons, kws, apps)
         }
     }
 

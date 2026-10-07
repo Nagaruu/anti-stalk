@@ -17,6 +17,9 @@ import kotlinx.coroutines.launch
  *
  * Flow: event -> is monitored pkg? -> cooldown? -> match keyword? -> log + overlay.
  * - Throttle: notificationTimeout=300ms in XML + 30s cooldown per person here.
+ * - Keystroke matches also arm a short "submit window": if a new window opens
+ *   within a few seconds (user pressed search / opened results), a
+ *   SEARCH_SUBMITTED trigger fires even inside the 30s cooldown.
  * - No message bodies stored; only matched name + trigger type.
  */
 class StalkAccessibilityService : AccessibilityService() {
@@ -26,6 +29,8 @@ class StalkAccessibilityService : AccessibilityService() {
     private var keywords: List<Triple<Long, String, String>> = emptyList() // pid, pname, normalizedKw
     private var enabledPkgs: Set<String> = emptySet()
     private var lastTriggerAt: MutableMap<String, Long> = mutableMapOf()
+    private var lastKeystrokeMatchAt: MutableMap<String, Long> = mutableMapOf()
+    private var lastSubmitAt: MutableMap<String, Long> = mutableMapOf()
 
     override fun onServiceConnected() {
         repo = AntiStalkRepository(this)
@@ -33,62 +38,99 @@ class StalkAccessibilityService : AccessibilityService() {
     }
 
     private fun refreshCache() {
-        scope.launch {
-            try {
-                repo.seedIfNeeded()
-                enabledPkgs = repo.enabledPackagesOnce()
-                val persons = repo.personsOnce().associateBy { it.id }
-                keywords = repo.keywordsOnce().mapNotNull { kw ->
-                    val p = persons[kw.personId] ?: return@mapNotNull null
-                    Triple(kw.personId, p.displayName, kw.normalized)
-                }
-            } catch (_: Exception) { }
-        }
+        scope.launch { refreshCacheNow() }
+    }
+
+    private suspend fun refreshCacheNow() {
+        try {
+            repo.seedIfNeeded()
+            enabledPkgs = repo.enabledPackagesOnce()
+            val persons = repo.personsOnce().associateBy { it.id }
+            keywords = repo.keywordsOnce().mapNotNull { kw ->
+                val p = persons[kw.personId] ?: return@mapNotNull null
+                Triple(kw.personId, p.displayName, kw.normalized)
+            }
+        } catch (_: Exception) { }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         val pkg = event.packageName?.toString() ?: return
         if (!MonitoredPackages.isMonitored(pkg)) return
+
+        // Snapshot synchronously: the framework may recycle the event
+        // after this callback returns, so never touch it from a coroutine.
+        val detector = DetectorRegistry.forPackage(pkg)
+        val typed: CharSequence? = try { detector.searchTextFromEvent(event) } catch (_: Exception) { null }
+        val isWindowChange = event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+
         if (keywords.isEmpty() || !enabledPkgs.contains(pkg)) {
-            // Refresh lazily: user may have just added a person.
-            refreshCache()
+            // Cold cache (e.g. person just added): refresh, then process
+            // this same event with fresh data instead of dropping it.
+            scope.launch {
+                refreshCacheNow()
+                if (!enabledPkgs.contains(pkg)) return@launch
+                if (typed != null) processTyped(pkg, typed)
+                if (isWindowChange) processTitle(pkg)
+            }
             return
         }
 
-        val detector = DetectorRegistry.forPackage(pkg)
-
         // Signal 1 — search input (HIGH confidence)
-        val typed = try { detector.searchTextFromEvent(event) } catch (_: Exception) { null }
-        if (typed != null) {
-            val m = Matcher.findMatch(typed, keywords)
-            if (m != null) {
-                maybeTrigger(pkg, m, trigger = "SEARCH_INPUT", confidence = "HIGH")
+        if (typed != null) processTyped(pkg, typed)
+
+        // Signal 2+3 — window change: match every title candidate (MEDIUM),
+        // or fire SEARCH_SUBMITTED (HIGH) if it follows a keystroke match.
+        if (isWindowChange) {
+            // Don't run tree walk on main thread.
+            scope.launch { processTitle(pkg) }
+        }
+    }
+
+    private fun processTyped(pkg: String, typed: CharSequence) {
+        val m = Matcher.findMatch(typed, keywords) ?: return
+        // Arm the submit window even when the keystroke itself is cooling down:
+        // the user is still typing this name, so a coming results page counts.
+        lastKeystrokeMatchAt["${m.personName}|$pkg"] = System.currentTimeMillis()
+        maybeTrigger(pkg, m, trigger = "SEARCH_INPUT", confidence = "HIGH")
+    }
+
+    private fun processTitle(pkg: String) {
+        try {
+            val root = rootInActiveWindow
+            val detector = DetectorRegistry.forPackage(pkg)
+            val candidates = try {
+                detector.titleCandidatesFromRoot(root)
+            } catch (_: Exception) {
+                emptyList()
+            }
+            for (title in candidates) {
+                val m = Matcher.findMatch(title, keywords) ?: continue
+                val now = System.currentTimeMillis()
+                val key = "${m.personName}|$pkg"
+                if (now - (lastKeystrokeMatchAt[key] ?: 0L) <= SUBMIT_WINDOW_MS) {
+                    // User pressed search / opened results right after typing
+                    // the name: roast again even inside the 30s cooldown.
+                    if (now - (lastSubmitAt[key] ?: 0L) < SUBMIT_COOLDOWN_MS) return
+                    lastSubmitAt[key] = now
+                    fireTrigger(pkg, m, trigger = "SEARCH_SUBMITTED", confidence = "HIGH")
+                } else {
+                    maybeTrigger(pkg, m, trigger = "PROFILE_TITLE", confidence = "MEDIUM")
+                }
                 return
             }
-        }
-
-        // Signal 2 — window change: check title (MEDIUM confidence), throttled.
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            // Don't run tree walk on main thread.
-            scope.launch {
-                try {
-                    val root = rootInActiveWindow
-                    val title = try { detector.titleFromRoot(root) } catch (_: Exception) { null }
-                    if (title != null) {
-                        val m = Matcher.findMatch(title, keywords)
-                        if (m != null) maybeTrigger(pkg, m, trigger = "PROFILE_TITLE", confidence = "MEDIUM")
-                    }
-                } catch (_: Exception) { }
-            }
-        }
+        } catch (_: Exception) { }
     }
 
     private fun maybeTrigger(pkg: String, m: Matcher.Match, trigger: String, confidence: String) {
         val now = System.currentTimeMillis()
         val key = "${m.personName}|$pkg"
-        if (now - (lastTriggerAt[key] ?: 0L) < 30_000) return // 30s cooldown per person+app
+        if (now - (lastTriggerAt[key] ?: 0L) < KEYSTROKE_COOLDOWN_MS) return // 30s cooldown per person+app
         lastTriggerAt[key] = now
+        fireTrigger(pkg, m, trigger, confidence)
+    }
+
+    private fun fireTrigger(pkg: String, m: Matcher.Match, trigger: String, confidence: String) {
         scope.launch {
             try {
                 val eventId = repo.logEvent(m.personName, m.personId, pkg, trigger, confidence)
@@ -109,6 +151,13 @@ class StalkAccessibilityService : AccessibilityService() {
     }
 
     companion object {
+        /** Spam guard for repeat keystroke/title matches, per person+app. */
+        const val KEYSTROKE_COOLDOWN_MS = 30_000L
+        /** A new window this soon after typing a matched name = user pressed search. */
+        const val SUBMIT_WINDOW_MS = 5_000L
+        /** Spam guard for submit triggers, per person+app. */
+        const val SUBMIT_COOLDOWN_MS = 5_000L
+
         /**
          * The system stores enabled services as flattened components with the
          * FULL class name, e.g.
