@@ -119,7 +119,10 @@ fun HomeScreen(vm: MainViewModel) {
                             style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
                         )
                     }
-                    TextButton(onClick = { tick++; vm.refreshStats() }) { Text("Kiểm tra lại") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { vm.testOverlay(ctx) }) { Text("TEST MÀN CÀ KHỊA") }
+                        TextButton(onClick = { tick++; vm.refreshStats() }) { Text("Kiểm tra lại") }
+                    }
                 }
             }
         }

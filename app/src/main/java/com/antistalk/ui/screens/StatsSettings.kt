@@ -18,14 +18,22 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.antistalk.ui.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -87,8 +95,23 @@ fun SettingsScreen(vm: MainViewModel) {
     val updState by vm.updateState.collectAsState()
     val wifiOnly by vm.updateWifiOnly.collectAsState()
     val themeMode by vm.themeMode.collectAsState()
+    val eventLog by vm.eventLog.collectAsState()
+    val kwsPreview by vm.keywordsPreview.collectAsState()
     val ctx = LocalContext.current
     val cs = MaterialTheme.colorScheme
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var diagTick by remember { mutableIntStateOf(0) }
+
+    DisposableEffect(lifecycle) {
+        val obs = LifecycleEventObserver { _, e ->
+            if (e == Lifecycle.Event.ON_RESUME) {
+                diagTick++
+            }
+        }
+        lifecycle.addObserver(obs)
+        onDispose { lifecycle.removeObserver(obs) }
+    }
+    LaunchedEffect(diagTick) { vm.refreshEventLog() }
     Column(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Cài đặt", style = MaterialTheme.typography.headlineSmall)
         Text("Giao diện", style = MaterialTheme.typography.titleMedium)
@@ -142,5 +165,30 @@ fun SettingsScreen(vm: MainViewModel) {
             "MVP sideload — chưa cần Play review. Khi lên Play: thêm prominent disclosure + video demo.",
             style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
         )
+        Spacer(Modifier.height(8.dp))
+        Text("Chẩn đoán detect (debug)", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Từ khóa đang theo dõi: ${if (kwsPreview.isEmpty()) "— chưa có —" else kwsPreview.joinToString(", ")}",
+            style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
+        )
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (eventLog.isEmpty()) {
+                    Text(
+                        "Chưa thấy event nào. Mở Facebook gõ vài chữ rồi quay lại bấm Tải lại log.",
+                        style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
+                    )
+                } else {
+                    eventLog.take(15).forEach { e ->
+                        Text(vm.eventLogLine(e), style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+        Text(
+            "Log chỉ lưu trên máy, mất khi tắt app. Dòng match/cooldown cho biết service có thấy chữ bạn gõ không.",
+            style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
+        )
+        OutlinedButton(onClick = { vm.refreshEventLog() }) { Text("TẢI LẠI LOG") }
     }
 }

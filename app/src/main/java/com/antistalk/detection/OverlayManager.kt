@@ -37,6 +37,8 @@ object OverlayManager {
     fun canDrawOverlays(ctx: Context): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) Settings.canDrawOverlays(ctx) else true
 
+    fun isShowing(): Boolean = root != null
+
     /** Follows the same Sáng/Tối/Theo hệ thống setting as the in-app theme. */
     private fun isDarkOverlay(appCtx: Context): Boolean {
         return try {
