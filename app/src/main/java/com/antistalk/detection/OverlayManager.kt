@@ -104,42 +104,109 @@ object OverlayManager {
         val level = prefs.getInt("roast_level", 2)
         val roast = RoastBank.pick(level, countToday.coerceAtLeast(1), personName, vi)
         val dark = isDarkOverlay(appCtx)
-        val cardBg = if (dark) "#1E1B30" else "#FFFFFF"
-        val titleFg = if (dark) "#F2EFFA" else "#14101F"
-        val bodyFg = if (dark) "#B9B3CC" else "#4A4458"
+        val cardBg = if (dark) "#1A1628" else "#FFFFFF"
+        val cardBorder = if (dark) "#3D3559" else "#E5DFD7"
+        val titleFg = if (dark) "#F5F3FF" else "#2C2420"
+        val bodyFg = if (dark) "#A89FC0" else "#6B5E56"
+        val countFg = if (dark) "#DDD6FE" else "#5B8A6A"
+        val hintFg = if (dark) "#6F6787" else "#9B8E85"
+        val primaryBtnBg = if (dark) "#8B5CF6" else "#5B8A6A"
 
         val manager = appCtx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         wm = manager
 
         val bg = FrameLayout(appCtx).apply {
-            setBackgroundColor(Color.parseColor("#99000000"))
+            setBackgroundColor(Color.parseColor("#B30D0B14"))
             isClickable = true
         }
+
+        val cardShape = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = 64f // ~24dp
+            setColor(Color.parseColor(cardBg))
+            setStroke(2, Color.parseColor(cardBorder))
+        }
+
         val card = LinearLayout(appCtx).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor(cardBg))
-            setPadding(56, 56, 56, 56)
+            background = cardShape
+            setPadding(64, 56, 64, 56)
         }
-        val emoji = TextView(appCtx).apply { text = "😏"; textSize = 40f }
+
+        val emoji = TextView(appCtx).apply {
+            text = "😏"
+            textSize = 38f
+        }
         val title = TextView(appCtx).apply {
             text = if (vi) "Lại tìm người ta à?" else "Looking them up again?"
-            textSize = 24f
+            textSize = 22f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
             setTextColor(Color.parseColor(titleFg))
         }
         val body = TextView(appCtx).apply {
-            text = roast + "\n" + if (vi) "Lần thứ ${countToday.coerceAtLeast(1)} hôm nay · $personName"
-            else "#${countToday.coerceAtLeast(1)} today · $personName"
+            text = roast
             textSize = 15f
             setTextColor(Color.parseColor(bodyFg))
+            setLineSpacing(6f, 1.15f)
         }
-        val btnOut = Button(appCtx).apply { text = if (vi) "THÔI, TÔI ĐI RA" else "NAH, I'M OUT" }
-        val btnStay = Button(appCtx).apply { text = if (vi) "TÔI VẪN MUỐN XEM" else "I STILL WANT TO SEE" }
+        val count = TextView(appCtx).apply {
+            text = if (vi) "Lần thứ ${countToday.coerceAtLeast(1)} hôm nay · $personName"
+            else "#${countToday.coerceAtLeast(1)} today · $personName"
+            textSize = 13f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(Color.parseColor(countFg))
+        }
+
+        val btnOutShape = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = 48f
+            setColor(Color.parseColor(primaryBtnBg))
+        }
+        val btnOut = Button(appCtx).apply {
+            text = if (vi) "THÔI, TÔI ĐI RA" else "NAH, I'M OUT"
+            background = btnOutShape
+            setTextColor(Color.WHITE)
+            textSize = 14f
+            isAllCaps = false
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setPadding(32, 28, 32, 28)
+        }
+
+        val btnStayShape = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = 48f
+            setColor(Color.TRANSPARENT)
+            setStroke(2, Color.parseColor(if (dark) "#4A4268" else "#D5CEC7"))
+        }
+        val btnStay = Button(appCtx).apply {
+            text = if (vi) "Tôi vẫn muốn xem" else "I still want to see"
+            background = btnStayShape
+            setTextColor(Color.parseColor(if (dark) "#A89FC0" else "#6B5E56"))
+            textSize = 13f
+            isAllCaps = false
+            setPadding(32, 22, 32, 22)
+        }
+
+        val hint = TextView(appCtx).apply {
+            text = if (vi) "Không cấm bạn. Chỉ bắt bạn nghĩ một lần." else "Not blocking you. Just one second of pause."
+            textSize = 12f
+            setTextColor(Color.parseColor(hintFg))
+            gravity = Gravity.CENTER
+        }
 
         btnOut.setOnClickListener {
             scope.launch {
                 try { AntiStalkRepository(appCtx).setDecision(eventId, "STOPPED") } catch (_: Exception) { }
             }
             hide()
+            // Pull user out of the social app by returning to Android Home Screen
+            try {
+                val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_HOME)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                appCtx.startActivity(homeIntent)
+            } catch (_: Exception) { }
         }
         btnStay.setOnClickListener {
             scope.launch {
@@ -147,11 +214,22 @@ object OverlayManager {
             }
             hide()
         }
-        card.addView(emoji); card.addView(title); card.addView(body)
-        card.addView(btnOut); card.addView(btnStay)
+
+        fun marginLp(top: Int, bottom: Int) = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = top; bottomMargin = bottom }
+
+        card.addView(emoji, marginLp(0, 12))
+        card.addView(title, marginLp(0, 12))
+        card.addView(body, marginLp(0, 10))
+        card.addView(count, marginLp(0, 24))
+        card.addView(btnOut, marginLp(0, 10))
+        card.addView(btnStay, marginLp(0, 16))
+        card.addView(hint, marginLp(0, 0))
+
         val lpCard = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT
-        ).apply { leftMargin = 48; rightMargin = 48; gravity = Gravity.CENTER }
+        ).apply { leftMargin = 52; rightMargin = 52; gravity = Gravity.CENTER }
         bg.addView(card, lpCard)
 
         val params = WindowManager.LayoutParams(

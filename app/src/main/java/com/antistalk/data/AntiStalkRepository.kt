@@ -20,6 +20,7 @@ class AntiStalkRepository(ctx: Context) {
 
     val persons: Flow<List<AvoidedPerson>> = db.personDao().observePersons()
     val apps: Flow<List<MonitoredAppEntity>> = db.appDao().observe()
+    val keywords: Flow<List<Keyword>> = db.keywordDao().observeAll()
     val recentEvents: Flow<List<StalkEvent>> = db.eventDao().observeRecent()
 
     var roastLevel: Int

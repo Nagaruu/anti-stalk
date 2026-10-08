@@ -10,6 +10,7 @@ import com.antistalk.data.AntiStalkRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /**
@@ -36,11 +37,23 @@ class StalkAccessibilityService : AccessibilityService() {
     private var lastRawLogAt: Long = 0L
 
     override fun onServiceConnected() {
+        instance = this
         repo = AntiStalkRepository(this)
         refreshCache()
+
+        // Continuously react to database changes: adding/deleting persons,
+        // updating keywords, or toggling monitored apps immediately updates cache!
+        scope.launch {
+            try {
+                combine(repo.persons, repo.keywords, repo.apps) { _, _, _ -> }
+                    .collect {
+                        refreshCacheNow()
+                    }
+            } catch (_: Exception) { }
+        }
     }
 
-    private fun refreshCache() {
+    fun refreshCache() {
         scope.launch { refreshCacheNow() }
     }
 
@@ -229,11 +242,20 @@ class StalkAccessibilityService : AccessibilityService() {
     override fun onInterrupt() { }
 
     override fun onUnbind(intent: Intent?): Boolean {
+        instance = null
         OverlayManager.hide()
         return super.onUnbind(intent)
     }
 
     companion object {
+        @Volatile
+        private var instance: StalkAccessibilityService? = null
+
+        /** Explicitly request the running service to re-read persons/keywords/apps immediately. */
+        fun invalidateCache() {
+            instance?.refreshCache()
+        }
+
         /** Spam guard for repeat keystroke/title matches, per person+app. */
         const val KEYSTROKE_COOLDOWN_MS = 30_000L
         /** A new window this soon after typing a matched name = user pressed search. */

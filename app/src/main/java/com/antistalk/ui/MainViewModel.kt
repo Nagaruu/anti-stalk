@@ -89,17 +89,24 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
     fun addPerson(name: String, note: String, goal: String, extra: List<String>, onDone: () -> Unit = {}) {
         viewModelScope.launch {
             repo.addPerson(name, note, goal, extra)
+            StalkAccessibilityService.invalidateCache()
             refreshStats()
             onDone()
         }
     }
 
     fun deletePerson(id: Long) {
-        viewModelScope.launch { repo.deletePerson(id) }
+        viewModelScope.launch {
+            repo.deletePerson(id)
+            StalkAccessibilityService.invalidateCache()
+        }
     }
 
     fun toggleApp(pkg: String, label: String, enabled: Boolean) {
-        viewModelScope.launch { repo.setAppEnabled(pkg, label, enabled) }
+        viewModelScope.launch {
+            repo.setAppEnabled(pkg, label, enabled)
+            StalkAccessibilityService.invalidateCache()
+        }
     }
 
     fun decide(eventId: Long, decision: String, reason: String = "", onDone: () -> Unit = {}) {
@@ -170,6 +177,7 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
     fun wipeAll() {
         viewModelScope.launch {
             repo.wipeAll()
+            StalkAccessibilityService.invalidateCache()
             roastLevel.value = 2
             onboardingDone.value = false
             refreshStats()

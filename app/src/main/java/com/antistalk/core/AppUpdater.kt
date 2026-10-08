@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -136,7 +137,12 @@ object AppUpdater {
                 }
             }
         }
-        appCtx.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+        ContextCompat.registerReceiver(
+            appCtx,
+            receiver,
+            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+            ContextCompat.RECEIVER_EXPORTED
+        )
         return id
     }
 
@@ -202,38 +208,17 @@ object AppUpdater {
         }
     }
 
-    /** Downloads the APK to Downloads/ and opens the system installer on completion. */
-    fun downloadAndInstall(ctx: Context, url: String) {
+    /** Downloads the APK and opens the system installer on completion. */
+    fun downloadAndInstall(ctx: Context, url: String, tag: String = "") {
         val appCtx = ctx.applicationContext
         if (!canInstall(appCtx)) {
             openInstallPermissionSettings(ctx)
             Toast.makeText(ctx, "Bật cho phép rồi nhấn Cập nhật lại nhé", Toast.LENGTH_LONG).show()
             return
         }
-        val dm = appCtx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val req = DownloadManager.Request(Uri.parse(url)).apply {
-            setTitle("Anti-Stalk đang cập nhật…")
-            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
-            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "anti-stalk-update.apk")
-            setMimeType("application/vnd.android.package-archive")
-        }
-        val id = dm.enqueue(req)
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(c: Context, intent: Intent) {
-                if (intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) != id) return
-                try { appCtx.unregisterReceiver(this) } catch (_: Exception) { }
-                try {
-                    val uri = dm.getUriForDownloadedFile(id) ?: return
-                    c.startActivity(Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(uri, "application/vnd.android.package-archive")
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    })
-                } catch (_: Exception) {
-                    Toast.makeText(c, "Tải xong nhưng không mở được màn cài đặt", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-        appCtx.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
         Toast.makeText(ctx, "Đang tải bản mới…", Toast.LENGTH_SHORT).show()
+        enqueueDownload(ctx, url, tag) { uri ->
+            openInstaller(appCtx, uri)
+        }
     }
 }

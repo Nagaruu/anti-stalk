@@ -13,13 +13,19 @@ import androidx.core.view.WindowCompat
 /**
  * App theme. [darkTheme] comes from the saved setting
  * (light / dark / follow system), resolved in MainActivity.
+ *
+ * Hybrid mode:
+ *  - Dark  → "Midnight Clarity": violet-pink palette + Plus Jakarta Sans
+ *  - Light → "Soft Sanity": sage-green/coral palette + Nunito
  */
 @Composable
 fun AntiStalkTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colors = if (darkTheme) DarkColors else LightColors
+    val colors     = if (darkTheme) DarkColors     else LightColors
+    val typography = if (darkTheme) DarkTypography else LightTypography
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -30,7 +36,8 @@ fun AntiStalkTheme(
     }
     MaterialTheme(
         colorScheme = colors,
-        typography = AppTypography,
-        content = { Surface(content = content) }
+        typography  = typography,
+        content     = { Surface(content = content) }
     )
 }
+

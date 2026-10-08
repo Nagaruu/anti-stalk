@@ -9,5 +9,6 @@
     android:accessibilityEventTypes="typeWindowStateChanged|typeViewTextChanged|typeViewFocused|typeWindowContentChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:canRetrieveWindowContent="true"
+    android:packageNames="com.facebook.katana,com.facebook.orca,com.instagram.android,com.zing.zalo"
     android:description="@string/accessibility_description"
     android:notificationTimeout="300" />

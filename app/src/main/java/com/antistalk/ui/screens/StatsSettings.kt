@@ -170,12 +170,42 @@ fun SettingsScreen(vm: MainViewModel) {
             )
         }
         Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             "Ngôn ngữ theo máy (vi/en có sẵn). Privacy: dữ liệu chỉ trên máy.",
             style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
         )
         Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { vm.wipeAll() }) { Text("XÓA TOÀN BỘ DỮ LIỆU LOCAL") }
+
+        var showWipeConfirm by remember { mutableStateOf(false) }
+        if (showWipeConfirm) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showWipeConfirm = false },
+                title = { Text("Xác nhận xóa dữ liệu?") },
+                text = { Text("Tất cả người cần né, từ khóa, nhật ký và thống kê stalk sẽ bị xóa hoàn toàn khỏi máy. Bạn có chắc không?") },
+                confirmButton = {
+                    androidx.compose.material3.Button(
+                        onClick = {
+                            showWipeConfirm = false
+                            vm.wipeAll()
+                        },
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) { Text("XÓA HẾT") }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { showWipeConfirm = false }) { Text("HỦY") }
+                }
+            )
+        }
+
+        OutlinedButton(
+            onClick = { showWipeConfirm = true },
+            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            )
+        ) { Text("XÓA TOÀN BỘ DỮ LIỆU LOCAL") }
         Spacer(Modifier.height(8.dp))
         Text(
             "MVP sideload — chưa cần Play review. Khi lên Play: thêm prominent disclosure + video demo.",

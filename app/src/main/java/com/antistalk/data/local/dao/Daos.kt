@@ -26,6 +26,7 @@ interface PersonDao {
 
 @Dao
 interface KeywordDao {
+    @Query("SELECT * FROM keywords") fun observeAll(): Flow<List<Keyword>>
     @Query("SELECT * FROM keywords") suspend fun getAllOnce(): List<Keyword>
     @Insert suspend fun insertAll(list: List<Keyword>)
     @Query("DELETE FROM keywords") suspend fun deleteAll()
