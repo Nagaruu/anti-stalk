@@ -16,3 +16,5 @@ captures/
 # Keystore — never commit release keys
 *.jks
 *.keystore
+!keystore/debug.keystore
+

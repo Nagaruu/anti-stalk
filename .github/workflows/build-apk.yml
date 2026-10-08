@@ -77,22 +77,14 @@ jobs:
             echo "num=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
           fi
 
-      # Stable signature. Ephemeral runners generate a RANDOM debug keystore
-      # on first use, so without this every release would carry a different
-      # signer and Android would refuse to update (INSTALL_FAILED_UPDATE_
-      # INCOMPATIBLE) — the in-app updater could never work. See
-      # keystore-onetime.yml for how DEBUG_KEYSTORE_B64 is produced.
+      # Stable signature: Uses the committed debug.keystore so every release
+      # and local build carries the EXACT same certificate. Prevents Android
+      # INSTALL_FAILED_UPDATE_INCOMPATIBLE and ensures in-app updater works.
       - name: Restore stable debug keystore
-        env:
-          KS_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
         run: |
-          if [ -z "$KS_B64" ]; then
-            echo "::error::DEBUG_KEYSTORE_B64 secret is missing — refusing to ship a randomly signed APK (updates would break)."
-            exit 1
-          fi
           mkdir -p "$HOME/.android"
-          printf '%s' "$KS_B64" | base64 -d > "$HOME/.android/debug.keystore"
-          echo "Restored stable debug keystore"
+          cp keystore/debug.keystore "$HOME/.android/debug.keystore"
+          echo "Restored stable debug keystore from repo"
 
       - name: Build debug APK
         env:
@@ -100,11 +92,8 @@ jobs:
         run: gradle assembleDebug --stacktrace
 
       # Fails the build if the APK is not signed with the stable keystore or
-      # if the signer drifted from EXPECTED_SIGNER_SHA256 — a silent signer
-      # change is exactly what broke updates between v26 and v27.
+      # if the signer drifted from expected SHA-256.
       - name: Verify APK signature
-        env:
-          EXPECTED: ${{ secrets.EXPECTED_SIGNER_SHA256 }}
         run: |
           APKSIGNER=$(ls "${ANDROID_HOME:-$ANDROID_SDK_ROOT}"/build-tools/*/apksigner | sort -V | tail -1)
           "$APKSIGNER" verify --print-certs app/build/outputs/apk/debug/app-debug.apk | tee /tmp/apk-certs.txt
@@ -116,7 +105,8 @@ jobs:
             echo "::error::APK is not signed with the stable keystore (apksigner=$APK_SHA keystore=$KS_SHA)"
             exit 1
           fi
-          if [ -n "$EXPECTED" ] && [ "$APK_SHA" != "$EXPECTED" ]; then
+          EXPECTED="162de3ba4d8a6c943e04080bbfe0cd5958d6482124fc2fd8610e2de3c62e8d82"
+          if [ "$APK_SHA" != "$EXPECTED" ]; then
             echo "::error::Signer drifted: expected $EXPECTED got $APK_SHA"
             exit 1
           fi
