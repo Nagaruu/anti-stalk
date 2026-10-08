@@ -72,7 +72,7 @@ object OverlayManager {
     @SuppressLint("SetTextI18n")
     fun show(
         ctx: Context, eventId: Long, personName: String, packageName: String,
-        trigger: String, confidence: String, countToday: Int
+        trigger: String, confidence: String, countToday: Int, isRepeatAttempt: Boolean = false
     ) {
         val appCtx = ctx.applicationContext
         // Real triggers arrive from Dispatchers.IO (see StalkAccessibilityService
@@ -81,14 +81,14 @@ object OverlayManager {
         // so a perfectly matched roast never appeared. The TEST button worked
         // only because it is clicked on the main thread.
         mainHandler.post {
-            showNow(appCtx, eventId, personName, packageName, trigger, confidence, countToday)
+            showNow(appCtx, eventId, personName, packageName, trigger, confidence, countToday, isRepeatAttempt)
         }
     }
 
     @SuppressLint("SetTextI18n")
     private fun showNow(
         appCtx: Context, eventId: Long, personName: String, packageName: String,
-        trigger: String, confidence: String, countToday: Int
+        trigger: String, confidence: String, countToday: Int, isRepeatAttempt: Boolean = false
     ) {
         if (!canDrawOverlays(appCtx)) {
             DetectionLog.add("overlay", "show", personName.take(24), "no-overlay-permission")
@@ -102,7 +102,7 @@ object OverlayManager {
 
         val prefs = appCtx.getSharedPreferences("antistalk", Context.MODE_PRIVATE)
         val level = prefs.getInt("roast_level", 2)
-        val roast = RoastBank.pick(level, countToday.coerceAtLeast(1), personName, vi)
+        val roast = RoastBank.pick(level, countToday.coerceAtLeast(1), personName, vi, isRepeatAttempt)
         val dark = isDarkOverlay(appCtx)
         val cardBg = if (dark) "#1A1628" else "#FFFFFF"
         val cardBorder = if (dark) "#3D3559" else "#E5DFD7"
@@ -227,7 +227,7 @@ object OverlayManager {
             scope.launch {
                 try { AntiStalkRepository(appCtx).setDecision(eventId, "STOPPED") } catch (_: Exception) { }
             }
-            StalkAccessibilityService.onUserDismiss(pName, pPkg, suppressDurationMs = 60_000L)
+            StalkAccessibilityService.onUserDismiss(pName, pPkg, isLeave = true)
             hide()
             // Pull user out of the social app by returning to Android Home Screen
             try {
@@ -245,7 +245,7 @@ object OverlayManager {
             scope.launch {
                 try { AntiStalkRepository(appCtx).setDecision(eventId, "CONTINUED") } catch (_: Exception) { }
             }
-            StalkAccessibilityService.onUserDismiss(pName, pPkg, suppressDurationMs = 300_000L)
+            StalkAccessibilityService.onUserDismiss(pName, pPkg, isLeave = false)
             hide()
         }
 

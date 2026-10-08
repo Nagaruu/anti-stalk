@@ -37,11 +37,16 @@ class StalkAccessibilityService : AccessibilityService() {
     private var enabledPkgs: Set<String> = emptySet()
     @Volatile
     private var suppressUntil: Long = 0L
+    @Volatile
+    private var lastLeftPerson: String = ""
+    @Volatile
+    private var lastLeftAt: Long = 0L
     private val suppressedPersonsUntil: MutableMap<String, Long> = ConcurrentHashMap()
     // Trigger maps are mutated from the main thread (processTyped via
     // onAccessibilityEvent) AND from IO coroutines (readFocusedText/processTitle),
     // so they must be concurrent — plain mutableMapOf risks CME/lost writes.
     private val lastTriggerAt: MutableMap<String, Long> = ConcurrentHashMap()
+    private val lastProfileTriggerAt: MutableMap<String, Long> = ConcurrentHashMap()
     private val lastKeystrokeMatchAt: MutableMap<String, Long> = ConcurrentHashMap()
     private val lastSubmitAt: MutableMap<String, Long> = ConcurrentHashMap()
     private var lastFocusReadAt: Long = 0L
@@ -237,11 +242,13 @@ class StalkAccessibilityService : AccessibilityService() {
                 if (now < (suppressedPersonsUntil[key] ?: 0L) || now < (suppressedPersonsUntil["${m.personName}|*"] ?: 0L)) continue
                 if (now - (lastKeystrokeMatchAt[key] ?: 0L) <= SUBMIT_WINDOW_MS) {
                     // User pressed search / opened results right after typing
-                    // the name: roast again even inside the 30s cooldown.
+                    // the name: roast again even inside the cooldown.
                     if (now - (lastSubmitAt[key] ?: 0L) < SUBMIT_COOLDOWN_MS) return
                     lastSubmitAt[key] = now
                     fireTrigger(pkg, m, trigger = "SEARCH_SUBMITTED", confidence = "HIGH")
                 } else {
+                    if (now - (lastProfileTriggerAt[key] ?: 0L) < PROFILE_COOLDOWN_MS) continue
+                    lastProfileTriggerAt[key] = now
                     maybeTrigger(pkg, m, trigger = "PROFILE_TITLE", confidence = "MEDIUM")
                 }
                 return
@@ -259,7 +266,7 @@ class StalkAccessibilityService : AccessibilityService() {
         }
         if (now - (lastTriggerAt[key] ?: 0L) < KEYSTROKE_COOLDOWN_MS) {
             DetectionLog.add(pkg, trigger, m.personName.take(24), "cooldown")
-            return // 30s cooldown per person+app
+            return
         }
         lastTriggerAt[key] = now
         fireTrigger(pkg, m, trigger, confidence)
@@ -267,13 +274,18 @@ class StalkAccessibilityService : AccessibilityService() {
 
     private fun fireTrigger(pkg: String, m: Matcher.Match, trigger: String, confidence: String) {
         if (OverlayManager.isShowing() || System.currentTimeMillis() < suppressUntil) return
+        val now = System.currentTimeMillis()
+        val isRepeat = (now - lastLeftAt < 180_000L) && lastLeftPerson.equals(m.personName, ignoreCase = true)
+        if (isRepeat) {
+            lastLeftAt = 0L
+        }
         scope.launch {
             try {
                 val eventId = repo.logEvent(m.personName, m.personId, pkg, trigger, confidence)
                 val countToday = repo.countTodayForPerson(m.personName)
                 OverlayManager.show(
                     this@StalkAccessibilityService, eventId,
-                    m.personName, pkg, trigger, confidence, countToday
+                    m.personName, pkg, trigger, confidence, countToday, isRepeat
                 )
             } catch (_: Exception) { }
         }
@@ -297,27 +309,40 @@ class StalkAccessibilityService : AccessibilityService() {
         }
 
         /**
-         * Disarms keystroke matches and suppresses triggers for this person.
-         * Invoked whenever the user makes an explicit decision on the overlay.
+         * Disarms keystroke matches and handles suppression after overlay decision.
+         * If [isLeave] is true (user tapped "THÔI, TÔI ĐI RA"), we suppress for 1.5s
+         * to let the window transition back to Home, and record a recent leave attempt.
+         * If they search again, it will trigger immediately with a repeat-attempt roast!
+         * If [isLeave] is false (user tapped "Tôi vẫn muốn xem"), we grant 5 minutes of peace.
          */
-        fun onUserDismiss(personName: String, pkg: String = "", suppressDurationMs: Long = 60_000L) {
+        fun onUserDismiss(personName: String, pkg: String = "", isLeave: Boolean = true) {
             val svc = instance ?: return
             val now = System.currentTimeMillis()
-            svc.suppressUntil = now + 4_000L // 4s global transition suppression
+            svc.suppressUntil = now + 1_500L // 1.5s transition suppression
             if (personName.isNotBlank()) {
                 val key = if (pkg.isNotBlank()) "$personName|$pkg" else personName
                 svc.lastKeystrokeMatchAt.remove(key)
-                svc.lastSubmitAt[key] = now + suppressDurationMs
-                svc.lastTriggerAt[key] = now + suppressDurationMs
-                svc.suppressedPersonsUntil[key] = now + suppressDurationMs
-                // Also disarm across all packages for this person
                 svc.lastKeystrokeMatchAt.keys.removeAll { it.startsWith("$personName|") }
-                svc.suppressedPersonsUntil["$personName|*"] = now + suppressDurationMs
+                if (isLeave) {
+                    svc.lastLeftPerson = personName
+                    svc.lastLeftAt = now
+                    // Allow quick re-detection when searching again (no lockout!)
+                    svc.lastTriggerAt[key] = 0L
+                    svc.lastTriggerAt["$personName|*"] = 0L
+                    svc.suppressedPersonsUntil.remove(key)
+                    svc.suppressedPersonsUntil.remove("$personName|*")
+                } else {
+                    // User chose to stay: give 5 minutes grace period
+                    svc.suppressedPersonsUntil[key] = now + 300_000L
+                    svc.suppressedPersonsUntil["$personName|*"] = now + 300_000L
+                }
             }
         }
 
-        /** Spam guard for repeat keystroke/title matches, per person+app. */
-        const val KEYSTROKE_COOLDOWN_MS = 30_000L
+        /** Spam guard for repeat keystroke matches, per person+app: 2.5s is plenty while typing. */
+        const val KEYSTROKE_COOLDOWN_MS = 2_500L
+        /** Cooldown between profile title inspections: 15s so reading a profile doesn't spam. */
+        const val PROFILE_COOLDOWN_MS = 15_000L
         /** A new window this soon after typing a matched name = user pressed search. */
         const val SUBMIT_WINDOW_MS = 5_000L
         /** Spam guard for submit triggers, per person+app. */
