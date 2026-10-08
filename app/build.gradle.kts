@@ -18,22 +18,12 @@ android {
         versionName = "0.1.$buildNumber"
     }
 
-    signingConfigs {
-        getByName("debug") {
-            val ks = rootProject.file("keystore/debug.keystore")
-            if (ks.exists()) {
-                storeFile = ks
-            }
-        }
-    }
-
     buildTypes {
         release {
             isMinifyEnabled = false
         }
         debug {
             applicationIdSuffix = ".debug"
-            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
