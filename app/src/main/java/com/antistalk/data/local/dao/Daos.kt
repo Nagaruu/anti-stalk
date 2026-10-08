@@ -2,8 +2,8 @@ package com.antistalk.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import com.antistalk.data.local.entity.AvoidedPerson
 import com.antistalk.data.local.entity.Keyword
 import com.antistalk.data.local.entity.MonitoredAppEntity
@@ -35,9 +35,11 @@ interface KeywordDao {
 @Dao
 interface AppDao {
     @Query("SELECT * FROM monitored_apps") fun observe(): Flow<List<MonitoredAppEntity>>
+    @Query("SELECT * FROM monitored_apps") suspend fun getAllOnce(): List<MonitoredAppEntity>
     @Query("SELECT * FROM monitored_apps WHERE enabled = 1") suspend fun getEnabledOnce(): List<MonitoredAppEntity>
     @Insert suspend fun insertAll(list: List<MonitoredAppEntity>)
-    @Update suspend fun update(app: MonitoredAppEntity)
+    /** Upsert: keeps existing rows alive on installs that predate a DEFAULTS entry. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(app: MonitoredAppEntity)
     @Query("SELECT COUNT(*) FROM monitored_apps") suspend fun count(): Int
 }
 

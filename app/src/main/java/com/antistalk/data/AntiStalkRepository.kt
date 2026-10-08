@@ -41,11 +41,14 @@ class AntiStalkRepository(ctx: Context) {
         set(v) { prefs.edit().putString("theme_mode", v).apply() }
 
     suspend fun seedIfNeeded() {
-        if (db.appDao().count() == 0) {
+        // Insert-only-when-empty would strand existing installs forever: a new
+        // MonitoredPackages.DEFAULTS entry would never reach their DB (and
+        // setEnabled/replace by key would then silently do nothing).
+        val existing = db.appDao().getAllOnce().map { it.packageName }.toSet()
+        val missing = MonitoredPackages.DEFAULTS.filter { it.packageName !in existing }
+        if (missing.isNotEmpty()) {
             db.appDao().insertAll(
-                MonitoredPackages.DEFAULTS.map {
-                    MonitoredAppEntity(it.packageName, it.label, it.defaultEnabled)
-                }
+                missing.map { MonitoredAppEntity(it.packageName, it.label, it.defaultEnabled) }
             )
         }
     }
@@ -59,7 +62,9 @@ class AntiStalkRepository(ctx: Context) {
 
     suspend fun deletePerson(id: Long) = db.personDao().deletePerson(id)
     suspend fun setAppEnabled(pkg: String, label: String, enabled: Boolean) =
-        db.appDao().update(MonitoredAppEntity(pkg, label, enabled))
+        // Upsert, not update: an UPDATE on a row that was never seeded (old
+        // install, new DEFAULTS entry) matches 0 rows and the toggle dies silently.
+        db.appDao().upsert(MonitoredAppEntity(pkg, label, enabled))
 
     suspend fun keywordsOnce() = db.keywordDao().getAllOnce()
     suspend fun personsOnce() = db.personDao().getPersonsOnce()

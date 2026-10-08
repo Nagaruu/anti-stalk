@@ -96,7 +96,12 @@ fun HomeScreen(vm: MainViewModel) {
         lifecycle.addObserver(obs)
         onDispose { lifecycle.removeObserver(obs) }
     }
-    LaunchedEffect(tick) { vm.refreshDetectionStatus(ctx) }
+    // Resume = user may have just answered a roast overlay (STOPPED/CONTINUED
+    // is written by the service, not by this VM), so stats must be re-read too.
+    LaunchedEffect(tick) {
+        vm.refreshDetectionStatus(ctx)
+        vm.refreshStats()
+    }
 
     val subtitle = when {
         stats.total == 0 -> "Sạch sẽ. Giữ phong độ này. 😌"

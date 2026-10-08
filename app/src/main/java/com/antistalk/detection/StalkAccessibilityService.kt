@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Passive observer. NEVER performs gestures/clicks on behalf of the user
@@ -28,11 +29,18 @@ class StalkAccessibilityService : AccessibilityService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var repo: AntiStalkRepository
+    // Written on Dispatchers.IO (refreshCacheNow), read on the main thread in
+    // onAccessibilityEvent: @Volatile + immutable snapshots keep both sides safe.
+    @Volatile
     private var keywords: List<Triple<Long, String, String>> = emptyList() // pid, pname, normalizedKw
+    @Volatile
     private var enabledPkgs: Set<String> = emptySet()
-    private var lastTriggerAt: MutableMap<String, Long> = mutableMapOf()
-    private var lastKeystrokeMatchAt: MutableMap<String, Long> = mutableMapOf()
-    private var lastSubmitAt: MutableMap<String, Long> = mutableMapOf()
+    // Trigger maps are mutated from the main thread (processTyped via
+    // onAccessibilityEvent) AND from IO coroutines (readFocusedText/processTitle),
+    // so they must be concurrent — plain mutableMapOf risks CME/lost writes.
+    private val lastTriggerAt: MutableMap<String, Long> = ConcurrentHashMap()
+    private val lastKeystrokeMatchAt: MutableMap<String, Long> = ConcurrentHashMap()
+    private val lastSubmitAt: MutableMap<String, Long> = ConcurrentHashMap()
     private var lastFocusReadAt: Long = 0L
     private var lastRawLogAt: Long = 0L
 
