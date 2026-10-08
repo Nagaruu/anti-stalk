@@ -30,14 +30,18 @@ class TextNormalizeTest {
     }
 
     @Test
-    fun `suggests full name, compact handle and last two words`() {
+    fun `suggests full name, compact handle and last two words without dangerous single subwords`() {
         assertEquals(
             listOf("nguyen van duc", "nguyenvanduc", "van duc"),
             suggestKeywords("Nguyễn Văn Đức")
         )
         assertEquals(
-            listOf("bao tram", "baotram", "tram"),
+            listOf("bao tram", "baotram"),
             suggestKeywords("Bảo Trâm")
+        )
+        assertEquals(
+            listOf("kang too jee", "kangtoojee", "too jee"),
+            suggestKeywords("Kang Too Jee")
         )
     }
 

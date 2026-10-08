@@ -1,13 +1,20 @@
 package com.antistalk.ui
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -30,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.antistalk.core.AppUpdater
+import com.antistalk.ui.screens.BackupSection
 import com.antistalk.ui.screens.HomeScreen
 import com.antistalk.ui.screens.OnboardingScreen
 import com.antistalk.ui.screens.PermissionsScreen
@@ -74,10 +81,14 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
     val ctx = LocalContext.current
     val update by vm.updateAvailable.collectAsState()
     val updState by vm.updateState.collectAsState()
+    val dismissedTag by vm.migrationDismissedTag.collectAsState()
 
     // Silent check once per app start (auto-downloads in background);
     // dialog only shows when an update exists.
-    LaunchedEffect(Unit) { vm.checkUpdate(ctx) }
+    LaunchedEffect(Unit) {
+        vm.refreshSignature(ctx)
+        vm.checkUpdate(ctx)
+    }
 
     // Near-auto update: download finished -> open the system installer
     // by itself, once per tag. The user only taps the Install button.
@@ -85,6 +96,44 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
         if (updState is MainViewModel.UpdateState.ReadyToInstall) {
             vm.consumeReadyToInstall(ctx)
         }
+    }
+
+    // APK downloaded but its signer differs from the installed app's:
+    // Android would fail the install with "gói xung đột", so we walk the
+    // user through the one-off uninstall/reinstall instead of failing there.
+    val migration = updState as? MainViewModel.UpdateState.NeedsMigration
+    if (migration != null && migration.info.tag != dismissedTag) {
+        AlertDialog(
+            onDismissRequest = { vm.dismissMigration() },
+            title = { Text("Cần chuyển đổi 1 lần 😅") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        "Bản ${migration.info.tag} dùng khoá ký mới, còn app đang cài (khoá ký cũ từ bản " +
+                            "build trước) nên Android không cho ghi đè lên. Chỉ cần gỡ rồi cài lại đúng 1 lần — " +
+                            "từ bản này trở đi cập nhật chạy bình thường.\n\n" +
+                            "Làm theo 4 bước dưới đây, bấm nút là xong:"
+                    )
+                    Text("1. Xuất sao lưu JSON — giữ file này để lấy dữ liệu về sau.")
+                    Text("2. Lưu bản cài đặt APK — file nằm ngoài bộ nhớ app nên sống qua lần gỡ.")
+                    Text("3. Bấm GỠ CÀI ĐẶT.")
+                    Text("4. Mở file APK vừa lưu (trong Tải xuống) để cài, rồi mở app → Cài đặt → Khôi phục.")
+                    Spacer(Modifier.height(2.dp))
+                    BackupSection(vm, showRestore = false)
+                }
+            },
+            confirmButton = {
+                Button(onClick = { vm.openUninstallForMigration(ctx) }) { Text("GỠ CÀI ĐẶT") }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.dismissMigration() }) { Text("ĐỂ SAU") }
+            }
+        )
     }
 
     if (update != null) {
@@ -101,8 +150,10 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
                 TextButton(onClick = {
                     // Tag matters: an empty KEY_DOWNLOADED_TAG breaks the
                     // resume/offline fast-path (savedTag -> Int parse fails).
-                    AppUpdater.downloadAndInstall(ctx, update!!.apkUrl, update!!.tag)
+                    // The VM path is used instead of AppUpdater.downloadAndInstall
+                    // so a signer mismatch lands in the migration dialog.
                     vm.skipUpdate()
+                    vm.startDownload(ctx, update ?: return@TextButton)
                 }) { Text("CẬP NHẬT") }
             },
             dismissButton = {

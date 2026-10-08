@@ -67,4 +67,21 @@ class MatcherTest {
         assertEquals("Trần Thị B", m.personName)
         assertEquals("tran thi b", m.keyword)
     }
+
+    @Test
+    fun `searching tool does not match Kang Too Jee`() {
+        val kangKws = com.antistalk.core.suggestKeywords("Kang Too Jee").map {
+            Triple(99L, "Kang Too Jee", it)
+        }
+        // "tool", "tool kit", "devtools" must NOT match
+        assertNull(Matcher.findMatch("tool", kangKws))
+        assertNull(Matcher.findMatch("tool kit", kangKws))
+        assertNull(Matcher.findMatch("devtools", kangKws))
+        assertNull(Matcher.findMatch("youtube", kangKws))
+
+        // Legitimate matches for Kang Too Jee must still work
+        assertNotNull(Matcher.findMatch("Kang Too Jee", kangKws))
+        assertNotNull(Matcher.findMatch("tim too jee", kangKws))
+        assertNotNull(Matcher.findMatch("kangtoojee", kangKws))
+    }
 }

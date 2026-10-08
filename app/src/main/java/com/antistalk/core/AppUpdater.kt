@@ -146,8 +146,25 @@ object AppUpdater {
         return id
     }
 
-    /** Open the system installer for an already-downloaded APK. */
-    fun openInstaller(ctx: Context, uri: Uri): Boolean {
+    /**
+     * Open the system installer for an already-downloaded APK.
+     *
+     * Blocked with a toast when the APK's signer differs from the installed
+     * app's — Android would fail that install anyway, and showing the system
+     * install screen just to get "gói xung đột" wastes a tap.
+     *
+     * [verifySigner] = false lets callers that already compared signatures on
+     * a background thread skip the (expensive) re-read.
+     */
+    fun openInstaller(ctx: Context, uri: Uri, verifySigner: Boolean = true): Boolean {
+        if (verifySigner && SigningInfo.archiveMatchesInstalled(ctx, uri) == false) {
+            Toast.makeText(
+                ctx,
+                "Bản tải về dùng khoá ký khác app đang cài — Android sẽ từ chối. Vào Cài đặt để làm bước chuyển đổi.",
+                Toast.LENGTH_LONG
+            ).show()
+            return false
+        }
         return try {
             ctx.startActivity(Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/vnd.android.package-archive")

@@ -1,12 +1,16 @@
 package com.antistalk.ui
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.antistalk.BuildConfig
 import com.antistalk.core.AppUpdater
+import com.antistalk.core.BackupFiles
+import com.antistalk.core.SigningInfo
 import com.antistalk.core.suggestKeywords
 import com.antistalk.data.AntiStalkRepository
 import com.antistalk.data.local.entity.AvoidedPerson
@@ -15,11 +19,13 @@ import com.antistalk.data.local.entity.StalkEvent
 import com.antistalk.detection.DetectionLog
 import com.antistalk.detection.OverlayManager
 import com.antistalk.detection.StalkAccessibilityService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,8 +55,49 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
         data object Idle : UpdateState
         data class Downloading(val tag: String) : UpdateState
         data class ReadyToInstall(val info: AppUpdater.UpdateInfo, val uri: android.net.Uri) : UpdateState
+        /** Downloaded APK's signer differs from the installed app's: Android will reject the install. */
+        data class NeedsMigration(val info: AppUpdater.UpdateInfo, val uri: android.net.Uri) : UpdateState
     }
     val updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
+
+    data class SignatureStatus(
+        val installedSha: String?,
+        val expectedSha: String,
+        val isReleaseKey: Boolean
+    )
+    val signature = MutableStateFlow<SignatureStatus?>(null)
+
+    fun refreshSignature(ctx: Context) {
+        viewModelScope.launch {
+            val installed = SigningInfo.installedCertSha256(ctx)
+            signature.value = SignatureStatus(
+                installedSha = installed,
+                expectedSha = SigningInfo.EXPECTED_CERT_SHA256,
+                isReleaseKey = installed != null &&
+                    installed.equals(SigningInfo.EXPECTED_CERT_SHA256, ignoreCase = true)
+            )
+        }
+    }
+
+    /**
+     * Park a freshly downloaded APK in either ReadyToInstall or NeedsMigration:
+     * comparing signers up-front is the difference between one tap on Install
+     * and the system failing with "gói xung đột với một gói hiện có".
+     * The comparison copies + parses the APK, so it runs off the main thread.
+     */
+    private fun armReady(ctx: Context, info: AppUpdater.UpdateInfo, uri: Uri) {
+        viewModelScope.launch {
+            val match = withContext(Dispatchers.IO) {
+                SigningInfo.archiveMatchesInstalled(ctx, uri)
+            }
+            updateState.value = if (match == false) {
+                updateAvailable.value = null
+                UpdateState.NeedsMigration(info, uri)
+            } else {
+                UpdateState.ReadyToInstall(info, uri)
+            }
+        }
+    }
 
     val updateWifiOnly = MutableStateFlow(repo.updateWifiOnly)
     fun setUpdateWifiOnly(v: Boolean) {
@@ -192,6 +239,17 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
 
     fun suggestedKeywords(name: String): List<String> = suggestKeywords(name)
 
+    /** Kick off the APK download for [info]; completion lands in armReady. */
+    fun startDownload(ctx: Context, info: AppUpdater.UpdateInfo) {
+        val cur = updateState.value
+        if (cur is UpdateState.Downloading && cur.tag == info.tag) return
+        updateState.value = UpdateState.Downloading(info.tag)
+        updateAvailable.value = null
+        AppUpdater.enqueueDownload(ctx, info.apkUrl, info.tag) { uri ->
+            armReady(ctx, info, uri)
+        }
+    }
+
     /**
      * Checks GitHub Releases for a newer tag. Silent unless [force] (manual tap).
      *
@@ -212,9 +270,7 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
                 if (savedNum != null && savedNum > BuildConfig.VERSION_CODE) {
                     val uri = AppUpdater.downloadedUriIfReady(ctx, savedTag)
                     if (uri != null) {
-                        updateState.value = UpdateState.ReadyToInstall(
-                            AppUpdater.UpdateInfo(savedTag, savedNum, "", ""), uri
-                        )
+                        armReady(ctx, AppUpdater.UpdateInfo(savedTag, savedNum, "", ""), uri)
                         updateAvailable.value = null
                         // Already have a newer APK on disk: don't hit the network,
                         // otherwise an offline check would end with BOTH a ready
@@ -245,7 +301,7 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
                 // Already have this exact build on disk? No need to re-download.
                 val readyUri = AppUpdater.downloadedUriIfReady(ctx, info.tag)
                 if (readyUri != null) {
-                    updateState.value = UpdateState.ReadyToInstall(info, readyUri)
+                    armReady(ctx, info, readyUri)
                     updateAvailable.value = null
                     return@launch
                 }
@@ -257,12 +313,8 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
                 }
                 val cur = updateState.value
                 if (cur is UpdateState.Downloading && cur.tag == info.tag) return@launch
-                updateState.value = UpdateState.Downloading(info.tag)
-                updateAvailable.value = null
                 Toast.makeText(ctx, "Đang tải bản ${info.tag} trong nền…", Toast.LENGTH_SHORT).show()
-                AppUpdater.enqueueDownload(ctx, info.apkUrl, info.tag) { uri ->
-                    updateState.value = UpdateState.ReadyToInstall(info, uri)
-                }
+                startDownload(ctx, info)
             } finally {
                 checkingUpdate.value = false
             }
@@ -280,13 +332,115 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
 
     /** Open the installer for a downloaded update (manual retry button). */
     fun openDownloadedInstaller(ctx: Context) {
-        val s = updateState.value as? UpdateState.ReadyToInstall ?: return
-        if (!AppUpdater.canInstall(ctx)) {
-            AppUpdater.openInstallPermissionSettings(ctx)
-            Toast.makeText(ctx, "Bật cho phép rồi bấm CÀI ĐẶT lại nhé", Toast.LENGTH_LONG).show()
+        if (updateState.value is UpdateState.NeedsMigration) {
+            migrationDismissedTag.value = "" // re-offer the guided migration
             return
         }
-        AppUpdater.openInstaller(ctx, s.uri)
+        val s = updateState.value as? UpdateState.ReadyToInstall ?: return
+        viewModelScope.launch {
+            // Re-check here: the file may have been replaced since download time.
+            val match = withContext(Dispatchers.IO) {
+                SigningInfo.archiveMatchesInstalled(ctx, s.uri)
+            }
+            if (match == false) {
+                updateState.value = UpdateState.NeedsMigration(s.info, s.uri)
+                updateAvailable.value = null
+                return@launch
+            }
+            if (!AppUpdater.canInstall(ctx)) {
+                AppUpdater.openInstallPermissionSettings(ctx)
+                Toast.makeText(ctx, "Bật cho phép rồi bấm CÀI ĐẶT lại nhé", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            AppUpdater.openInstaller(ctx, s.uri, verifySigner = false)
+        }
+    }
+
+    // ─── One-time signer migration ────────────────────────────────────────────
+    // Android refuses updates signed by a different key (pre-keystore CI builds
+    // each had a throwaway debug key), so the only way forward is: save data →
+    // save the new APK somewhere that survives uninstall → uninstall → install
+    // the saved APK → restore. Each step is a button here, no typing.
+
+    /** Tag of a migration dialog the user already dismissed this session. */
+    val migrationDismissedTag = MutableStateFlow("")
+
+    fun dismissMigration() {
+        migrationDismissedTag.value =
+            (updateState.value as? UpdateState.NeedsMigration)?.info?.tag ?: ""
+    }
+
+    fun showMigrationAgain() {
+        migrationDismissedTag.value = ""
+    }
+
+    fun exportBackupTo(ctx: Context, dst: Uri) {
+        viewModelScope.launch {
+            val json = try { repo.exportBackupJson() } catch (_: Exception) { null }
+            val ok = json != null && BackupFiles.writeText(ctx, dst, json)
+            Toast.makeText(
+                ctx,
+                if (ok) "Đã xuất sao lưu — giữ file này đến khi cài lại xong"
+                else "Xuất sao lưu thất bại, thử lại nhé",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    fun importBackupFrom(ctx: Context, src: Uri) {
+        viewModelScope.launch {
+            val json = BackupFiles.readText(ctx, src)
+            if (json == null) {
+                Toast.makeText(ctx, "Không đọc được file sao lưu", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            try {
+                val s = repo.importBackupJson(json)
+                StalkAccessibilityService.invalidateCache()
+                refreshStats()
+                Toast.makeText(
+                    ctx,
+                    "Đã khôi phục ${s.persons} người né, ${s.keywords} từ khóa, ${s.apps} app" +
+                        if (s.skippedPersons > 0) " (bỏ qua ${s.skippedPersons} tên đã có)" else "",
+                    Toast.LENGTH_LONG
+                ).show()
+            } catch (_: Exception) {
+                Toast.makeText(ctx, "File không phải bản sao lưu Anti-Stalk", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    /** Copy the downloaded APK to a user-picked location that survives uninstall. */
+    fun saveUpdateApkTo(ctx: Context, dst: Uri) {
+        val s = when (val st = updateState.value) {
+            is UpdateState.NeedsMigration -> st.uri
+            is UpdateState.ReadyToInstall -> st.uri
+            else -> null
+        }
+        if (s == null) {
+            Toast.makeText(ctx, "Chưa có bản cập nhật nào để lưu", Toast.LENGTH_SHORT).show()
+            return
+        }
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { BackupFiles.copy(ctx, s, dst) }
+            Toast.makeText(
+                ctx,
+                if (ok) "Đã lưu bản cài đặt — mở file đó để cài sau khi gỡ app"
+                else "Lưu file thất bại, thử lại nhé",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    fun openUninstallForMigration(ctx: Context) {
+        try {
+            ctx.startActivity(
+                Intent(Intent.ACTION_DELETE, Uri.parse("package:${ctx.packageName}"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (_: Exception) {
+            Toast.makeText(ctx, "Không mở được màn hình gỡ cài đặt", Toast.LENGTH_LONG).show()
+        }
     }
 
     fun skipUpdate() {

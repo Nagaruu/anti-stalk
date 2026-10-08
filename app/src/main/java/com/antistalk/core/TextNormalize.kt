@@ -48,23 +48,24 @@ fun suggestKeywords(displayName: String): List<String> {
 
     // 1. Full name — unless the whole name is one generic word (see doc).
     val isGenericSingle = words.size == 1 && GENERIC_VIETNAMESE_WORDS.contains(norm)
-    if (!isGenericSingle) out.add(norm)
+    if (!isGenericSingle && norm.length >= 3) out.add(norm)
 
     // 2. Continuous username / handle (no spaces)
-    if (words.size > 1) {
+    if (words.size > 1 && norm.replace(" ", "").length >= 3) {
         out.add(norm.replace(" ", ""))
     }
 
-    // 3. Last 2 words (e.g. "Văn Đức" from "Nguyễn Văn Đức")
+    // 3. Last 2 words if >= 3 words (e.g. "Văn Đức" from "Nguyễn Văn Đức", "Too Jee" from "Kang Too Jee")
     if (words.size >= 3) {
         val lastTwo = "${words[words.size - 2]} ${words.last()}"
-        out.add(lastTwo)
+        if (lastTwo.length >= 4) {
+            out.add(lastTwo)
+        }
     }
 
-    // 4. Single given name if not a generic surname/middle name and len >= 3
-    val givenName = words.lastOrNull()
-    if (givenName != null && givenName.length >= 3 && !GENERIC_VIETNAMESE_WORDS.contains(givenName)) {
-        out.add(givenName)
+    // 4. Single-word names only: if the entire name is a single distinctive word (len >= 4)
+    if (words.size == 1 && norm.length >= 4 && !GENERIC_VIETNAMESE_WORDS.contains(norm)) {
+        out.add(norm)
     }
 
     return out.distinct()

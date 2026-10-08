@@ -169,7 +169,7 @@ fun InterventionOverlay(
                         Button(
                             onClick = {
                                 onDecision(s.eventId, "STOPPED", "")
-                                step = 1
+                                onDone()
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),

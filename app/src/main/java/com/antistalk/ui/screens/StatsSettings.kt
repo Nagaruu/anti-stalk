@@ -294,6 +294,7 @@ fun SettingsScreen(vm: MainViewModel) {
     val eventLog by vm.eventLog.collectAsState()
     val kwsPreview by vm.keywordsPreview.collectAsState()
     val checkFailed by vm.updateCheckFailed.collectAsState()
+    val signature by vm.signature.collectAsState()
     val isDark = LocalIsDarkTheme.current
     val ctx = LocalContext.current
     val cs = MaterialTheme.colorScheme
@@ -307,7 +308,10 @@ fun SettingsScreen(vm: MainViewModel) {
         lifecycle.addObserver(obs)
         onDispose { lifecycle.removeObserver(obs) }
     }
-    LaunchedEffect(diagTick) { vm.refreshEventLog() }
+    LaunchedEffect(diagTick) {
+        vm.refreshEventLog()
+        vm.refreshSignature(ctx)
+    }
 
     Column(
         modifier = Modifier
@@ -471,6 +475,14 @@ fun SettingsScreen(vm: MainViewModel) {
                             "Đang tải bản ${s.tag} trong nền… cứ dùng app bình thường.",
                             style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
                         )
+                    is MainViewModel.UpdateState.NeedsMigration ->
+                        Button(
+                            onClick = { vm.showMigrationAgain() },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("XEM HƯỚNG DẪN CHUYỂN ĐỔI BẢN ${s.info.tag}")
+                        }
                     is MainViewModel.UpdateState.ReadyToInstall ->
                         Button(
                             onClick = { vm.openDownloadedInstaller(ctx) },
@@ -498,6 +510,84 @@ fun SettingsScreen(vm: MainViewModel) {
                         color = cs.error
                     )
                 }
+            }
+        }
+
+        // ─── Signing certificate diagnostics ─────────────────────────────────
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = cs.surface),
+            elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                if (isDark) cs.outlineVariant else cs.outline
+            )
+        ) {
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Chữ ký cài đặt",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                val sig = signature
+                if (sig == null) {
+                    Text("Đang đọc chữ ký…", style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
+                } else {
+                    Text(
+                        "Bản đang cài: ${com.antistalk.core.SigningInfo.shortSha(sig.installedSha)}",
+                        style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
+                    )
+                    Text(
+                        "Khoá chính thức: ${com.antistalk.core.SigningInfo.shortSha(sig.expectedSha)}",
+                        style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
+                    )
+                    if (sig.isReleaseKey) {
+                        Text(
+                            "✓ Khớp khoá chính thức — cập nhật chạy 1 chạm.",
+                            style = MaterialTheme.typography.labelSmall, color = WarmSage
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(cs.error.copy(alpha = 0.08f))
+                                .padding(10.dp)
+                        ) {
+                            Text(
+                                "⚠️ Bản đang cài được ký bằng khoá cũ (build trước khi có khoá ổn định). " +
+                                    "Android sẽ từ chối mọi bản cập nhật mới — chỉ cần chuyển đổi 1 lần là xong. " +
+                                    "Nếu đang có bản cập nhật, bấm nút hướng dẫn trong mục Cập nhật ứng dụng.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = cs.error
+                            )
+                        }
+                    }
+                }
+                OutlinedButton(
+                    onClick = { vm.refreshSignature(ctx) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("KIỂM TRA LẠI CHỮ KÝ")
+                }
+            }
+        }
+
+        // ─── Backup / restore ─────────────────────────────────────────────────
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = cs.surface),
+            elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                if (isDark) cs.outlineVariant else cs.outline
+            )
+        ) {
+            Column(modifier = Modifier.padding(18.dp)) {
+                BackupSection(vm)
             }
         }
 

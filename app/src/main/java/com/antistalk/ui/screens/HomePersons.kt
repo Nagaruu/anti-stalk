@@ -883,6 +883,24 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
             }
         }
 
+        if (persons.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(cs.surfaceVariant)
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        "Đã từng xuất file sao lưu? Vào Cài đặt → Dữ liệu → Khôi phục để lấy người né và từ khóa về.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cs.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
         item {
             Spacer(Modifier.height(30.dp))
         }

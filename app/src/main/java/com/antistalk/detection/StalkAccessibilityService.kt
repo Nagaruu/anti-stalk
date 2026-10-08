@@ -35,6 +35,9 @@ class StalkAccessibilityService : AccessibilityService() {
     private var keywords: List<Triple<Long, String, String>> = emptyList() // pid, pname, normalizedKw
     @Volatile
     private var enabledPkgs: Set<String> = emptySet()
+    @Volatile
+    private var suppressUntil: Long = 0L
+    private val suppressedPersonsUntil: MutableMap<String, Long> = ConcurrentHashMap()
     // Trigger maps are mutated from the main thread (processTyped via
     // onAccessibilityEvent) AND from IO coroutines (readFocusedText/processTitle),
     // so they must be concurrent — plain mutableMapOf risks CME/lost writes.
@@ -72,6 +75,11 @@ class StalkAccessibilityService : AccessibilityService() {
             val persons = repo.personsOnce().associateBy { it.id }
             keywords = repo.keywordsOnce().mapNotNull { kw ->
                 val p = persons[kw.personId] ?: return@mapNotNull null
+                val pWords = com.antistalk.core.normalizeText(p.displayName).split("\\s+".toRegex()).filter { it.isNotBlank() }
+                // Safety guard: for multi-word names, never load dangerous single sub-words (<= 4 chars or in name)
+                if (pWords.size > 1 && !kw.normalized.contains(" ") && (kw.normalized.length <= 4 || pWords.contains(kw.normalized))) {
+                    return@mapNotNull null
+                }
                 Triple(kw.personId, p.displayName, kw.normalized)
             }
         } catch (_: Exception) { }
@@ -79,6 +87,8 @@ class StalkAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
+        if (OverlayManager.isShowing()) return
+        if (System.currentTimeMillis() < suppressUntil) return
         val pkg = event.packageName?.toString() ?: return
         if (!MonitoredPackages.isMonitored(pkg)) return
 
@@ -182,23 +192,38 @@ class StalkAccessibilityService : AccessibilityService() {
     }
 
     private fun processTyped(pkg: String, typed: CharSequence, src: String): Matcher.Match? {
+        if (OverlayManager.isShowing() || System.currentTimeMillis() < suppressUntil) return null
         val snippet = typed.toString().take(24)
         val m = Matcher.findMatch(typed, keywords)
         if (m == null) {
             if (typed.length >= 3) DetectionLog.add(pkg, src, snippet, "no-match")
             return null
         }
+        val now = System.currentTimeMillis()
+        val key = "${m.personName}|$pkg"
+        if (now < (suppressedPersonsUntil[key] ?: 0L) || now < (suppressedPersonsUntil["${m.personName}|*"] ?: 0L)) {
+            DetectionLog.add(pkg, src, snippet, "suppressed:${m.personName}")
+            return null
+        }
         // Arm the submit window even when the keystroke itself is cooling down:
         // the user is still typing this name, so a coming results page counts.
-        lastKeystrokeMatchAt["${m.personName}|$pkg"] = System.currentTimeMillis()
+        lastKeystrokeMatchAt[key] = now
         DetectionLog.add(pkg, src, snippet, "match:${m.personName}")
         maybeTrigger(pkg, m, trigger = "SEARCH_INPUT", confidence = "HIGH")
         return m
     }
 
     private fun processTitle(pkg: String) {
+        if (OverlayManager.isShowing() || System.currentTimeMillis() < suppressUntil) return
         try {
-            val root = rootInActiveWindow
+            val root = rootInActiveWindow ?: return
+            // If the user has an active input focused (i.e. currently typing in search bar),
+            // do NOT treat background search history / suggestions as a PROFILE_TITLE!
+            val focusedInput = try { root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) } catch (_: Exception) { null }
+            if (focusedInput != null && focusedInput.isFocused) {
+                return
+            }
+
             val detector = DetectorRegistry.forPackage(pkg)
             val candidates = try {
                 detector.titleCandidatesFromRoot(root)
@@ -209,6 +234,7 @@ class StalkAccessibilityService : AccessibilityService() {
                 val m = Matcher.findMatch(title, keywords) ?: continue
                 val now = System.currentTimeMillis()
                 val key = "${m.personName}|$pkg"
+                if (now < (suppressedPersonsUntil[key] ?: 0L) || now < (suppressedPersonsUntil["${m.personName}|*"] ?: 0L)) continue
                 if (now - (lastKeystrokeMatchAt[key] ?: 0L) <= SUBMIT_WINDOW_MS) {
                     // User pressed search / opened results right after typing
                     // the name: roast again even inside the 30s cooldown.
@@ -224,8 +250,13 @@ class StalkAccessibilityService : AccessibilityService() {
     }
 
     private fun maybeTrigger(pkg: String, m: Matcher.Match, trigger: String, confidence: String) {
+        if (OverlayManager.isShowing() || System.currentTimeMillis() < suppressUntil) return
         val now = System.currentTimeMillis()
         val key = "${m.personName}|$pkg"
+        if (now < (suppressedPersonsUntil[key] ?: 0L) || now < (suppressedPersonsUntil["${m.personName}|*"] ?: 0L)) {
+            DetectionLog.add(pkg, trigger, m.personName.take(24), "suppressed")
+            return
+        }
         if (now - (lastTriggerAt[key] ?: 0L) < KEYSTROKE_COOLDOWN_MS) {
             DetectionLog.add(pkg, trigger, m.personName.take(24), "cooldown")
             return // 30s cooldown per person+app
@@ -235,6 +266,7 @@ class StalkAccessibilityService : AccessibilityService() {
     }
 
     private fun fireTrigger(pkg: String, m: Matcher.Match, trigger: String, confidence: String) {
+        if (OverlayManager.isShowing() || System.currentTimeMillis() < suppressUntil) return
         scope.launch {
             try {
                 val eventId = repo.logEvent(m.personName, m.personId, pkg, trigger, confidence)
@@ -262,6 +294,26 @@ class StalkAccessibilityService : AccessibilityService() {
         /** Explicitly request the running service to re-read persons/keywords/apps immediately. */
         fun invalidateCache() {
             instance?.refreshCache()
+        }
+
+        /**
+         * Disarms keystroke matches and suppresses triggers for this person.
+         * Invoked whenever the user makes an explicit decision on the overlay.
+         */
+        fun onUserDismiss(personName: String, pkg: String = "", suppressDurationMs: Long = 60_000L) {
+            val svc = instance ?: return
+            val now = System.currentTimeMillis()
+            svc.suppressUntil = now + 4_000L // 4s global transition suppression
+            if (personName.isNotBlank()) {
+                val key = if (pkg.isNotBlank()) "$personName|$pkg" else personName
+                svc.lastKeystrokeMatchAt.remove(key)
+                svc.lastSubmitAt[key] = now + suppressDurationMs
+                svc.lastTriggerAt[key] = now + suppressDurationMs
+                svc.suppressedPersonsUntil[key] = now + suppressDurationMs
+                // Also disarm across all packages for this person
+                svc.lastKeystrokeMatchAt.keys.removeAll { it.startsWith("$personName|") }
+                svc.suppressedPersonsUntil["$personName|*"] = now + suppressDurationMs
+            }
         }
 
         /** Spam guard for repeat keystroke/title matches, per person+app. */

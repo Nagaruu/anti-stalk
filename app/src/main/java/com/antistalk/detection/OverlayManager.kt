@@ -221,9 +221,13 @@ object OverlayManager {
         }
 
         btnOut.setOnClickListener {
+            val s = current
+            val pName = s?.personName ?: personName
+            val pPkg = s?.packageName ?: packageName
             scope.launch {
                 try { AntiStalkRepository(appCtx).setDecision(eventId, "STOPPED") } catch (_: Exception) { }
             }
+            StalkAccessibilityService.onUserDismiss(pName, pPkg, suppressDurationMs = 60_000L)
             hide()
             // Pull user out of the social app by returning to Android Home Screen
             try {
@@ -235,9 +239,13 @@ object OverlayManager {
             } catch (_: Exception) { }
         }
         btnStay.setOnClickListener {
+            val s = current
+            val pName = s?.personName ?: personName
+            val pPkg = s?.packageName ?: packageName
             scope.launch {
                 try { AntiStalkRepository(appCtx).setDecision(eventId, "CONTINUED") } catch (_: Exception) { }
             }
+            StalkAccessibilityService.onUserDismiss(pName, pPkg, suppressDurationMs = 300_000L)
             hide()
         }
 
