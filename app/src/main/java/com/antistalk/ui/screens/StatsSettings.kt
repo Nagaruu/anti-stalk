@@ -70,6 +70,7 @@ import com.antistalk.ui.theme.WarmSage
 import com.antistalk.ui.theme.WarmSageLight
 import com.antistalk.ui.theme.ZaloGradient
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -80,6 +81,15 @@ fun StatsScreen(vm: MainViewModel) {
     val isDark = LocalIsDarkTheme.current
     val cs = MaterialTheme.colorScheme
     val fmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+    // Log rows span days (recent = up to 200 events), while the summary cards
+    // are strictly "today" — without the date a row from yesterday looks current.
+    val fmtWithDate = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
+    val todayStart = remember {
+        Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
 
     val disciplineRate = if (stats.total > 0) {
         ((stats.stopped * 100) / stats.total).coerceIn(0, 100)
@@ -228,7 +238,9 @@ fun StatsScreen(vm: MainViewModel) {
                             color = cs.onSurface
                         )
                         Text(
-                            "${e.triggerType} · ${fmt.format(Date(e.createdAt))}",
+                            "${e.triggerType} · " +
+                                if (e.createdAt >= todayStart) fmt.format(Date(e.createdAt))
+                                else fmtWithDate.format(Date(e.createdAt)),
                             style = MaterialTheme.typography.labelSmall,
                             color = cs.onSurfaceVariant
                         )
