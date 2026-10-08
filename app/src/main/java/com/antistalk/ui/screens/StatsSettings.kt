@@ -176,7 +176,7 @@ fun StatsScreen(vm: MainViewModel) {
                         Text("🌟", fontSize = 32.sp)
                         Spacer(Modifier.width(14.dp))
                         Text(
-                            "Chưa có lần can thiệp nào hôm nay. Sạch sẽ tuyệt đối! 😌",
+                            "Chưa ghi nhận lần can thiệp nào. Sạch sẽ tuyệt đối! 😌",
                             style = MaterialTheme.typography.bodyMedium,
                             color = cs.onSurfaceVariant
                         )

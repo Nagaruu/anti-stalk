@@ -178,8 +178,14 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
         viewModelScope.launch {
             repo.wipeAll()
             StalkAccessibilityService.invalidateCache()
+            // repo.wipeAll() clears the prefs file, so every mirrored StateFlow
+            // must fall back to its default too — otherwise the chips keep
+            // showing the pre-wipe values while the prefs already say "system"/true.
             roastLevel.value = 2
+            themeMode.value = "system"
+            updateWifiOnly.value = true
             onboardingDone.value = false
+            detectionStatus.value = DetectionStatus()
             refreshStats()
         }
     }
@@ -210,6 +216,10 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
                             AppUpdater.UpdateInfo(savedTag, savedNum, "", ""), uri
                         )
                         updateAvailable.value = null
+                        // Already have a newer APK on disk: don't hit the network,
+                        // otherwise an offline check would end with BOTH a ready
+                        // install and a "couldn't check for updates" warning.
+                        return@launch
                     }
                 }
                 val res = AppUpdater.checkResult(BuildConfig.VERSION_CODE)

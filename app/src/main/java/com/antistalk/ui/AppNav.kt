@@ -45,6 +45,18 @@ fun AppNav(vm: MainViewModel) {
     var goal by remember { mutableStateOf("Người yêu cũ") }
     val start = if (!onboarded) "onboarding" else "main"
 
+    // startDestination is only read once per NavHost, so a wipe (which clears
+    // onboarding_done) would otherwise leave the user on "main" with empty data
+    // while the flag says onboarding is still pending.
+    LaunchedEffect(onboarded) {
+        val route = nav.currentDestination?.route ?: return@LaunchedEffect
+        if (!onboarded && route != "onboarding") {
+            nav.navigate("onboarding") {
+                popUpTo(nav.graph.id) { inclusive = true }
+            }
+        }
+    }
+
     NavHost(navController = nav, startDestination = start) {
         composable("onboarding") {
             OnboardingScreen(onDone = { g -> goal = g; nav.navigate("permissions") })
@@ -87,7 +99,9 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
             },
             confirmButton = {
                 TextButton(onClick = {
-                    AppUpdater.downloadAndInstall(ctx, update!!.apkUrl)
+                    // Tag matters: an empty KEY_DOWNLOADED_TAG breaks the
+                    // resume/offline fast-path (savedTag -> Int parse fails).
+                    AppUpdater.downloadAndInstall(ctx, update!!.apkUrl, update!!.tag)
                     vm.skipUpdate()
                 }) { Text("CẬP NHẬT") }
             },

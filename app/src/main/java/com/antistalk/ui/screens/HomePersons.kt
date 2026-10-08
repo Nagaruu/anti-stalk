@@ -780,6 +780,12 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                                 }
                             }
                         }
+                    } else if (name.isNotBlank()) {
+                        Text(
+                            "Tên này quá chung để tự nhận diện — hãy thêm từ khóa riêng (VD: biệt danh, tên kèm chữ lót) ở ô phía trên.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cs.onSurfaceVariant
+                        )
                     }
 
                     Button(

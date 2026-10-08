@@ -86,6 +86,11 @@ jobs:
           cp keystore/debug.keystore "$HOME/.android/debug.keystore"
           echo "Restored stable debug keystore from repo"
 
+      # Matcher / text-normalization logic is pure JVM: run it before the APK
+      # build so a broken keyword match fails fast instead of shipping.
+      - name: Run unit tests
+        run: gradle testDebugUnitTest --stacktrace
+
       - name: Build debug APK
         env:
           BUILD_NUMBER: ${{ steps.ver.outputs.num }}

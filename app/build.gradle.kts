@@ -18,12 +18,25 @@ android {
         versionName = "0.1.$buildNumber"
     }
 
+    signingConfigs {
+        getByName("debug") {
+            val ks = rootProject.file("keystore/debug.keystore")
+            if (ks.exists()) {
+                storeFile = ks
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
         }
         debug {
             applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
@@ -61,4 +74,6 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.6.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.compose.ui:ui-text-google-fonts:1.6.7")
+
+    testImplementation("junit:junit:4.13.2")
 }
