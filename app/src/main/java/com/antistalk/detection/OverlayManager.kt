@@ -133,12 +133,36 @@ object OverlayManager {
             setPadding(64, 56, 64, 56)
         }
 
+        val topAccent = android.view.View(appCtx).apply {
+            val h = (if (dark) 3 else 5) * appCtx.resources.displayMetrics.density.toInt()
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, h).apply {
+                bottomMargin = (14 * appCtx.resources.displayMetrics.density).toInt()
+            }
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 8f
+                if (dark) {
+                    setColor(Color.parseColor("#8B5CF6"))
+                } else {
+                    colors = intArrayOf(
+                        Color.parseColor("#5B8A6A"),
+                        Color.parseColor("#E8795A"),
+                        Color.parseColor("#7B6FBF")
+                    )
+                    orientation = android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT
+                }
+            }
+        }
+        card.addView(topAccent)
+
         val emoji = TextView(appCtx).apply {
-            text = "😏"
+            text = if (dark) "😏" else "🧠"
             textSize = 38f
         }
         val title = TextView(appCtx).apply {
-            text = if (vi) "Lại tìm người ta à?" else "Looking them up again?"
+            text = if (vi) {
+                if (dark) "Lại tìm người ta à?" else "Khoan đã bạn ơi!"
+            } else "Looking them up again?"
             textSize = 22f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             setTextColor(Color.parseColor(titleFg))
@@ -163,7 +187,9 @@ object OverlayManager {
             setColor(Color.parseColor(primaryBtnBg))
         }
         val btnOut = Button(appCtx).apply {
-            text = if (vi) "THÔI, TÔI ĐI RA" else "NAH, I'M OUT"
+            text = if (vi) {
+                if (dark) "THÔI, TÔI ĐI RA" else "🌿 THÔI, TÔI ĐI RA!"
+            } else "NAH, I'M OUT"
             background = btnOutShape
             setTextColor(Color.WHITE)
             textSize = 14f

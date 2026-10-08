@@ -92,17 +92,56 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
         )
     }
 
+    val isDark = com.antistalk.ui.theme.LocalIsDarkTheme.current
+    val cs = MaterialTheme.colorScheme
+    val navColors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+        selectedIconColor = if (isDark) com.antistalk.ui.theme.BrandViolet else com.antistalk.ui.theme.WarmSage,
+        selectedTextColor = if (isDark) com.antistalk.ui.theme.BrandViolet else com.antistalk.ui.theme.WarmSage,
+        indicatorColor = if (isDark) Color(0x338B5CF6) else com.antistalk.ui.theme.WarmSageLight,
+        unselectedIconColor = cs.onSurfaceVariant,
+        unselectedTextColor = cs.onSurfaceVariant
+    )
+
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(selected = tab == 0, onClick = { tab = 0 },
-                    icon = { Icon(Icons.Filled.Home, null) }, label = { Text("Hôm nay") })
-                NavigationBarItem(selected = tab == 1, onClick = { tab = 1 },
-                    icon = { Icon(Icons.Filled.Person, null) }, label = { Text("Né ai") })
-                NavigationBarItem(selected = tab == 2, onClick = { tab = 2; vm.refreshStats() },
-                    icon = { Icon(Icons.Filled.Star, null) }, label = { Text("Thống kê") })
-                NavigationBarItem(selected = tab == 3, onClick = { tab = 3 },
-                    icon = { Icon(Icons.Filled.Settings, null) }, label = { Text("Cài đặt") })
+            NavigationBar(
+                containerColor = cs.surface,
+                tonalElevation = 0.dp,
+                modifier = Modifier.border(
+                    androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (isDark) cs.outlineVariant else cs.outline
+                    )
+                )
+            ) {
+                NavigationBarItem(
+                    selected = tab == 0,
+                    onClick = { tab = 0 },
+                    icon = { Icon(Icons.Filled.Home, null) },
+                    label = { Text("Hôm nay", fontWeight = if (tab == 0) FontWeight.Bold else FontWeight.Normal) },
+                    colors = navColors
+                )
+                NavigationBarItem(
+                    selected = tab == 1,
+                    onClick = { tab = 1 },
+                    icon = { Icon(Icons.Filled.Person, null) },
+                    label = { Text("Né ai", fontWeight = if (tab == 1) FontWeight.Bold else FontWeight.Normal) },
+                    colors = navColors
+                )
+                NavigationBarItem(
+                    selected = tab == 2,
+                    onClick = { tab = 2; vm.refreshStats() },
+                    icon = { Icon(Icons.Filled.Star, null) },
+                    label = { Text("Thống kê", fontWeight = if (tab == 2) FontWeight.Bold else FontWeight.Normal) },
+                    colors = navColors
+                )
+                NavigationBarItem(
+                    selected = tab == 3,
+                    onClick = { tab = 3 },
+                    icon = { Icon(Icons.Filled.Settings, null) },
+                    label = { Text("Cài đặt", fontWeight = if (tab == 3) FontWeight.Bold else FontWeight.Normal) },
+                    colors = navColors
+                )
             }
         }
     ) { pad ->
@@ -116,3 +155,4 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
         }
     }
 }
+

@@ -89,3 +89,22 @@ val LightColors = lightColorScheme(
     onError                = SS_OnError,
 )
 
+// ─── Concept A & B Shared Design Tokens ─────────────────────────────────────────
+val AccentTerracotta    = Color(0xFFE8795A) // Concept B warm coral
+val AccentTerracottaLight = Color(0xFFFDEEE9)
+val AccentLavender      = Color(0xFF7B6FBF) // Concept B introspective purple
+val AccentLavenderLight = Color(0xFFEEEDF9)
+val BrandViolet         = Color(0xFF8B5CF6) // Concept A primary violet
+val BrandHotPink        = Color(0xFFEC4899) // Concept A glowing pink
+val MintGreen           = Color(0xFF34D399) // Concept A positive action green
+val WarmSage            = Color(0xFF5B8A6A) // Concept B sage green
+val WarmSageLight       = Color(0xFFEBF3EE)
+
+// Monitored app icon gradients
+val FbGradient          = listOf(Color(0xFF1877F2), Color(0xFF0D65D9))
+val IgGradient          = listOf(Color(0xFFF58529), Color(0xFFDD2A7B), Color(0xFF8134AF))
+val MsGradient          = listOf(Color(0xFF0084FF), Color(0xFF00C6FF))
+val ZaloGradient        = listOf(Color(0xFF0068FF), Color(0xFF0052CC))
+val DefaultAppGradient  = listOf(Color(0xFF6B7280), Color(0xFF4B5563))
+
+

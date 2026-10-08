@@ -10,6 +10,12 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
+
+/** Indicates whether Concept A (Dark / Midnight Clarity) is currently active. */
+val LocalIsDarkTheme = compositionLocalOf { false }
+
 /**
  * App theme. [darkTheme] comes from the saved setting
  * (light / dark / follow system), resolved in MainActivity.
@@ -34,10 +40,12 @@ fun AntiStalkTheme(
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
-    MaterialTheme(
-        colorScheme = colors,
-        typography  = typography,
-        content     = { Surface(content = content) }
-    )
+    CompositionLocalProvider(LocalIsDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colors,
+            typography  = typography,
+            content     = { Surface(content = content) }
+        )
+    }
 }
 
