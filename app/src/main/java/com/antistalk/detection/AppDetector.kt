@@ -23,36 +23,50 @@ interface AppDetector {
      * the first text, or a profile name further down the tree is missed.
      */
     fun titleCandidatesFromRoot(root: AccessibilityNodeInfo?): List<String>
+
+    /**
+     * Finds active text inside an editable search field or input on screen.
+     * Useful when re-opening an app or submitting search where text is already present.
+     */
+    fun findActiveSearchText(root: AccessibilityNodeInfo?): String?
 }
 
 class GenericDetector(override val packageName: String) : AppDetector {
 
     override fun searchTextFromEvent(event: AccessibilityEvent): CharSequence? {
-        // TYPE_VIEW_TEXT_CHANGED carries the typed text for EditText search boxes.
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) {
-            val t = event.text?.firstOrNull()
-            if (!t.isNullOrBlank()) return t
+        // 1. Check event.text list (join if multiple tokens)
+        val eventTexts = event.text
+        if (!eventTexts.isNullOrEmpty()) {
+            val joined = eventTexts.filter { !it.isNullOrBlank() }.joinToString(" ").trim()
+            if (joined.isNotBlank()) return joined
         }
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED) {
-            val t = event.text?.firstOrNull()
-            if (!t.isNullOrBlank()) return t
-        }
+        // 2. Check event.source node directly (crucial for Zalo, custom EditTexts & IME callbacks)
+        try {
+            val src = event.source
+            if (src != null) {
+                val srcText = src.text?.toString()?.trim()
+                if (!srcText.isNullOrBlank()) return srcText
+                val desc = src.contentDescription?.toString()?.trim()
+                if (!desc.isNullOrBlank()) return desc
+            }
+        } catch (_: Exception) { }
+        // 3. Fallback: event contentDescription
+        val directDesc = event.contentDescription?.toString()?.trim()
+        if (!directDesc.isNullOrBlank()) return directDesc
         return null
     }
 
     override fun titleCandidatesFromRoot(root: AccessibilityNodeInfo?): List<String> {
         if (root == null) return emptyList()
-        // Best-effort: walk first ~60 nodes, collect short title-like texts.
-        // We deliberately do NOT dump message bodies — titles only.
         val out = mutableListOf<String>()
         var seen = 0
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
-        while (queue.isNotEmpty() && seen < 60 && out.size < 20) {
+        while (queue.isNotEmpty() && seen < 250 && out.size < 30) {
             val n = queue.removeFirst()
             seen++
-            val text = n.text?.toString()?.trim()
-            if (!text.isNullOrEmpty() && text.length in 3..40 && !text.contains("\n")) {
+            val text = n.text?.toString()?.trim() ?: n.contentDescription?.toString()?.trim()
+            if (!text.isNullOrEmpty() && text.length in 3..50 && !text.contains("\n")) {
                 if (n.isClickable || n.className?.contains("TextView") == true) {
                     if (out.none { it.equals(text, ignoreCase = true) }) out.add(text)
                 }
@@ -60,6 +74,24 @@ class GenericDetector(override val packageName: String) : AppDetector {
             queue.addAll(childrenOf(n))
         }
         return out
+    }
+
+    override fun findActiveSearchText(root: AccessibilityNodeInfo?): String? {
+        if (root == null) return null
+        var seen = 0
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        while (queue.isNotEmpty() && seen < 120) {
+            val n = queue.removeFirst()
+            seen++
+            val isEdit = try { n.isEditable || n.className?.contains("EditText") == true } catch (_: Exception) { false }
+            if (isEdit) {
+                val t = n.text?.toString()?.trim()
+                if (!t.isNullOrBlank() && t.length >= 3) return t
+            }
+            queue.addAll(childrenOf(n))
+        }
+        return null
     }
 
     private fun childrenOf(n: AccessibilityNodeInfo): List<AccessibilityNodeInfo> {

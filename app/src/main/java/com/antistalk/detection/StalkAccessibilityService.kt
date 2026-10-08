@@ -50,6 +50,7 @@ class StalkAccessibilityService : AccessibilityService() {
     private val lastKeystrokeMatchAt: MutableMap<String, Long> = ConcurrentHashMap()
     private val lastSubmitAt: MutableMap<String, Long> = ConcurrentHashMap()
     private var lastFocusReadAt: Long = 0L
+    private var lastTitleCheckAt: Long = 0L
     private var lastRawLogAt: Long = 0L
 
     override fun onServiceConnected() {
@@ -76,7 +77,12 @@ class StalkAccessibilityService : AccessibilityService() {
     private suspend fun refreshCacheNow() {
         try {
             repo.seedIfNeeded()
-            enabledPkgs = repo.enabledPackagesOnce()
+            val loadedPkgs = repo.enabledPackagesOnce()
+            enabledPkgs = if (loadedPkgs.isEmpty()) {
+                MonitoredPackages.DEFAULTS.filter { it.defaultEnabled }.map { it.packageName }.toSet()
+            } else {
+                loadedPkgs
+            }
             val persons = repo.personsOnce().associateBy { it.id }
             keywords = repo.keywordsOnce().mapNotNull { kw ->
                 val p = persons[kw.personId] ?: return@mapNotNull null
@@ -103,11 +109,10 @@ class StalkAccessibilityService : AccessibilityService() {
         val type = event.eventType
         val typed: CharSequence? = try { detector.searchTextFromEvent(event) } catch (_: Exception) { null }
         val isWindowChange = type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+        val isContentChange = type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
         val typeName = try { AccessibilityEvent.eventTypeToString(type) } catch (_: Exception) { type.toString() }
 
         // DEBUG: prove events arrive at all — including ones carrying no text.
-        // Without this line, "Facebook sends nothing" and "text extraction
-        // fails" look identical in the log. Throttled: content-change storms.
         if (System.currentTimeMillis() - lastRawLogAt > RAW_LOG_THROTTLE_MS &&
             (typed == null || typed.length < 3)
         ) {
@@ -115,32 +120,25 @@ class StalkAccessibilityService : AccessibilityService() {
             DetectionLog.add(pkg, typeName, typed?.toString()?.take(24) ?: "—", "seen-no-text")
         }
 
-        if (keywords.isEmpty() || !enabledPkgs.contains(pkg)) {
-            // Cold cache (e.g. person just added): refresh, then process
-            // this same event with fresh data instead of dropping it.
-            if (type != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-                DetectionLog.add(pkg, typeName, typed?.toString()?.take(24) ?: "—", "cache-refresh")
-            }
+        if (keywords.isEmpty()) {
             scope.launch {
                 refreshCacheNow()
-                if (!enabledPkgs.contains(pkg)) return@launch
                 if (typed != null) processTyped(pkg, typed, "event")
                 else readFocusedText(pkg)
-                if (isWindowChange) processTitle(pkg)
+                if (isWindowChange || isContentChange) processTitle(pkg)
             }
             return
         }
 
-        // Signal 1 — search input (HIGH confidence)
+        // Signal 1 — search input from event (HIGH confidence)
         if (typed != null) {
             processTyped(pkg, typed, "event")
         } else if (type == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED ||
             type == AccessibilityEvent.TYPE_VIEW_FOCUSED ||
-            type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+            type == AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED ||
+            type == AccessibilityEvent.TYPE_VIEW_CLICKED ||
+            isContentChange
         ) {
-            // Some search fields (e.g. newer Compose text fields) fire events
-            // WITHOUT putting text in event.text. Fall back to reading the
-            // currently focused input node, throttled.
             val now = System.currentTimeMillis()
             if (now - lastFocusReadAt > FOCUS_READ_THROTTLE_MS) {
                 lastFocusReadAt = now
@@ -148,11 +146,14 @@ class StalkAccessibilityService : AccessibilityService() {
             }
         }
 
-        // Signal 2+3 — window change: match every title candidate (MEDIUM),
-        // or fire SEARCH_SUBMITTED (HIGH) if it follows a keystroke match.
-        if (isWindowChange) {
-            // Don't run tree walk on main thread.
-            scope.launch { processTitle(pkg) }
+        // Signal 2+3 — window change or UI navigation update:
+        // scans active search text (HIGH) or title candidates (profile/chat header).
+        if (isWindowChange || isContentChange) {
+            val now = System.currentTimeMillis()
+            if (isWindowChange || (now - lastTitleCheckAt > TITLE_CHECK_THROTTLE_MS)) {
+                lastTitleCheckAt = now
+                scope.launch { processTitle(pkg) }
+            }
         }
     }
 
@@ -163,13 +164,12 @@ class StalkAccessibilityService : AccessibilityService() {
             val focused = try {
                 root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
             } catch (_: Exception) { null }
-            val text = focused?.text?.toString()
+            val text = focused?.text?.toString() ?: focused?.contentDescription?.toString()
             if (!text.isNullOrBlank() && text.length >= 3) {
                 processTyped(pkg, text, "focused")
                 return
             }
-            // Facebook can drop input focus while the keyboard/autocomplete is
-            // open — scan every editable node instead of giving up.
+            // Many apps drop input focus while keyboard is open — scan every editable node instead.
             val editable = firstEditableText(root)
             if (editable != null) processTyped(pkg, editable, "editable")
         } catch (_: Exception) { }
@@ -181,12 +181,12 @@ class StalkAccessibilityService : AccessibilityService() {
         var seen = 0
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
-        while (queue.isNotEmpty() && seen < 80) {
+        while (queue.isNotEmpty() && seen < 150) {
             val n = queue.removeFirst()
             seen++
             val editable = try { n.isEditable } catch (_: Exception) { false }
             if (editable || n.className?.contains("EditText") == true) {
-                val t = n.text?.toString()
+                val t = n.text?.toString() ?: n.contentDescription?.toString()
                 if (best == null && !t.isNullOrBlank() && t.length >= 3) best = t
             }
             for (i in 0 until n.childCount) {
@@ -222,14 +222,23 @@ class StalkAccessibilityService : AccessibilityService() {
         if (OverlayManager.isShowing() || System.currentTimeMillis() < suppressUntil) return
         try {
             val root = rootInActiveWindow ?: return
-            // If the user has an active input focused (i.e. currently typing in search bar),
-            // do NOT treat background search history / suggestions as a PROFILE_TITLE!
-            val focusedInput = try { root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) } catch (_: Exception) { null }
-            if (focusedInput != null && focusedInput.isFocused) {
-                return
+            val detector = DetectorRegistry.forPackage(pkg)
+
+            // 1. Check if there is an active search bar with text on screen.
+            // When re-opening the app or submitting, this catches the query instantly.
+            val activeSearch = detector.findActiveSearchText(root)
+            if (!activeSearch.isNullOrBlank()) {
+                val sm = Matcher.findMatch(activeSearch, keywords)
+                if (sm != null) {
+                    processTyped(pkg, activeSearch, "active-search")
+                    return
+                } else {
+                    // Search bar has an unrelated query (e.g. "tool") -> prevent background history false match
+                    return
+                }
             }
 
-            val detector = DetectorRegistry.forPackage(pkg)
+            // 2. Scan title candidates (profile header, chat header)
             val candidates = try {
                 detector.titleCandidatesFromRoot(root)
             } catch (_: Exception) {
@@ -241,8 +250,6 @@ class StalkAccessibilityService : AccessibilityService() {
                 val key = "${m.personName}|$pkg"
                 if (now < (suppressedPersonsUntil[key] ?: 0L) || now < (suppressedPersonsUntil["${m.personName}|*"] ?: 0L)) continue
                 if (now - (lastKeystrokeMatchAt[key] ?: 0L) <= SUBMIT_WINDOW_MS) {
-                    // User pressed search / opened results right after typing
-                    // the name: roast again even inside the cooldown.
                     if (now - (lastSubmitAt[key] ?: 0L) < SUBMIT_COOLDOWN_MS) return
                     lastSubmitAt[key] = now
                     fireTrigger(pkg, m, trigger = "SEARCH_SUBMITTED", confidence = "HIGH")
@@ -318,23 +325,23 @@ class StalkAccessibilityService : AccessibilityService() {
         fun onUserDismiss(personName: String, pkg: String = "", isLeave: Boolean = true) {
             val svc = instance ?: return
             val now = System.currentTimeMillis()
-            svc.suppressUntil = now + 1_500L // 1.5s transition suppression
+            svc.suppressUntil = now + 1_200L // 1.2s transition suppression
             if (personName.isNotBlank()) {
-                val key = if (pkg.isNotBlank()) "$personName|$pkg" else personName
-                svc.lastKeystrokeMatchAt.remove(key)
-                svc.lastKeystrokeMatchAt.keys.removeAll { it.startsWith("$personName|") }
+                val prefix = personName.trim()
+                svc.lastKeystrokeMatchAt.keys.removeAll { it.startsWith(prefix, ignoreCase = true) }
                 if (isLeave) {
                     svc.lastLeftPerson = personName
                     svc.lastLeftAt = now
-                    // Allow quick re-detection when searching again (no lockout!)
-                    svc.lastTriggerAt[key] = 0L
-                    svc.lastTriggerAt["$personName|*"] = 0L
-                    svc.suppressedPersonsUntil.remove(key)
-                    svc.suppressedPersonsUntil.remove("$personName|*")
+                    // Allow quick re-detection when searching again (wipe all lockout keys for this person)
+                    svc.lastTriggerAt.keys.removeAll { it.startsWith(prefix, ignoreCase = true) }
+                    svc.lastSubmitAt.keys.removeAll { it.startsWith(prefix, ignoreCase = true) }
+                    svc.lastProfileTriggerAt.keys.removeAll { it.startsWith(prefix, ignoreCase = true) }
+                    svc.suppressedPersonsUntil.keys.removeAll { it.startsWith(prefix, ignoreCase = true) }
                 } else {
-                    // User chose to stay: give 5 minutes grace period
-                    svc.suppressedPersonsUntil[key] = now + 300_000L
-                    svc.suppressedPersonsUntil["$personName|*"] = now + 300_000L
+                    // User chose to stay: give 60s peace period for this viewing session
+                    val key = if (pkg.isNotBlank()) "$personName|$pkg" else personName
+                    svc.suppressedPersonsUntil[key] = now + 60_000L
+                    svc.suppressedPersonsUntil["$personName|*"] = now + 60_000L
                 }
             }
         }
@@ -348,7 +355,9 @@ class StalkAccessibilityService : AccessibilityService() {
         /** Spam guard for submit triggers, per person+app. */
         const val SUBMIT_COOLDOWN_MS = 5_000L
         /** Min gap between focused-node reads (content-changed fires constantly). */
-        const val FOCUS_READ_THROTTLE_MS = 400L
+        const val FOCUS_READ_THROTTLE_MS = 300L
+        /** Min gap between UI title/search checks during navigation/content updates. */
+        const val TITLE_CHECK_THROTTLE_MS = 600L
         /** Min gap between "event seen but no text" debug lines. */
         const val RAW_LOG_THROTTLE_MS = 500L
 

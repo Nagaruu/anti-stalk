@@ -6,9 +6,9 @@
   For MVP we distribute via sideload APK, Play review comes later.
 -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeWindowStateChanged|typeViewTextChanged|typeViewFocused|typeWindowContentChanged"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeViewTextChanged|typeViewFocused|typeWindowContentChanged|typeViewClicked|typeViewTextSelectionChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:canRetrieveWindowContent="true"
     android:packageNames="com.facebook.katana,com.facebook.orca,com.instagram.android,com.zing.zalo"
     android:description="@string/accessibility_description"
-    android:notificationTimeout="300" />
+    android:notificationTimeout="100" />
