@@ -859,53 +859,62 @@ fun StatsScreen(vm: MainViewModel) {
 
         // ─── Section: Leaderboard / Event Log Header ──────────────────────────
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    "CHI TIẾT THEO NGƯỜI",
+                    "CHI TIẾT & LỊCH SỬ SỰ KIỆN",
                     style = MaterialTheme.typography.labelSmall,
                     color = cs.onSurfaceVariant,
                     letterSpacing = 1.sp,
                     fontWeight = FontWeight.Bold
                 )
 
-                // View Mode Switcher
+                // Full-width Segmented Control: Theo người | Dòng thời gian
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(999.dp))
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
                         .background(cs.surfaceVariant)
-                        .padding(3.dp),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    val isGrouped = viewMode == "grouped"
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(if (viewMode == "grouped") cs.surface else Color.Transparent)
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isGrouped) cs.surface else Color.Transparent)
                             .clickable { viewMode = "grouped" }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "👥 Nhóm theo người",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (viewMode == "grouped") FontWeight.Bold else FontWeight.Medium,
-                            color = if (viewMode == "grouped") cs.onSurface else cs.onSurfaceVariant
+                            "👥 Theo người",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isGrouped) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isGrouped) cs.onSurface else cs.onSurfaceVariant
                         )
                     }
+
+                    val isTimeline = viewMode == "timeline"
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(if (viewMode == "timeline") cs.surface else Color.Transparent)
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isTimeline) cs.surface else Color.Transparent)
                             .clickable { viewMode = "timeline" }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
                             "⏱️ Dòng thời gian",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (viewMode == "timeline") FontWeight.Bold else FontWeight.Medium,
-                            color = if (viewMode == "timeline") cs.onSurface else cs.onSurfaceVariant
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isTimeline) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isTimeline) cs.onSurface else cs.onSurfaceVariant
                         )
                     }
                 }

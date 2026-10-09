@@ -35,12 +35,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -692,6 +695,7 @@ private fun DetectionStatusRow(
 }
 
 // ─── Persons Screen (Tab Né Ai - Block List Style) ──────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
     val persons by vm.persons.collectAsState()
@@ -700,119 +704,159 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var showAddDialog by remember { mutableStateOf(false) }
+    var showAddSheet by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var extra by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var personToDelete by remember { mutableStateOf<com.antistalk.data.local.entity.AvoidedPerson?>(null) }
 
-    // Dialog: Thêm người cần né
-    if (showAddDialog) {
-        AlertDialog(
+    // Bottom Sheet: Thêm người cần né (Thao tác 1 tay thuận tiện trên mobile, không bị bàn phím che)
+    if (showAddSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
             onDismissRequest = {
-                showAddDialog = false
+                showAddSheet = false
                 name = ""; extra = ""; note = ""
             },
-            title = {
-                Text(
-                    "Thêm người cần né",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Column(
+            sheetState = sheetState,
+            containerColor = cs.surface,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            dragHandle = {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(androidx.compose.foundation.rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(top = 12.dp, bottom = 8.dp)
+                        .width(40.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(cs.onSurfaceVariant.copy(alpha = 0.35f))
+                )
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 22.dp)
+                    .padding(bottom = 36.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Trường 1: Tên hiển thị (Bắt buộc)
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Tên người cần né *") },
-                        placeholder = { Text("VD: Nguyễn Văn A") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        supportingText = {
-                            Text(
-                                "Tên hiển thị trong cảnh báo và để hệ thống tự động sinh từ khóa quét cơ bản.",
-                                fontSize = 11.sp
-                            )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Thêm người cần né",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = cs.onSurface
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            "Hệ thống sẽ bảo vệ và nhắc nhở khi bạn tìm kiếm",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = cs.onSurfaceVariant
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            showAddSheet = false
+                            name = ""; extra = ""; note = ""
                         }
-                    )
+                    ) {
+                        Text("✕", fontSize = 18.sp, color = cs.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                    }
+                }
 
-                    // Gợi ý từ khóa tự động
-                    val sug = remember(name) { vm.suggestedKeywords(name) }
-                    if (name.isNotBlank() && sug.isNotEmpty()) {
-                        Column {
-                            Text(
-                                "Gợi ý tự động nhận diện:",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = cs.onSurfaceVariant
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                sug.take(3).forEach { s ->
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(999.dp))
-                                            .background(if (isDark) cs.surfaceVariant else WarmSageLight)
-                                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                                    ) {
-                                        Text(
-                                            s,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = if (isDark) cs.onSurfaceVariant else WarmSage
-                                        )
-                                    }
+                // Trường 1: Tên hiển thị (Bắt buộc)
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Tên người cần né *") },
+                    placeholder = { Text("VD: Nguyễn Văn A, Crush, Người yêu cũ...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    supportingText = {
+                        Text(
+                            "Tên hiển thị trong cảnh báo và để hệ thống tự động sinh từ khóa quét cơ bản.",
+                            fontSize = 11.sp
+                        )
+                    }
+                )
+
+                // Gợi ý từ khóa tự động
+                val sug = remember(name) { vm.suggestedKeywords(name) }
+                if (name.isNotBlank() && sug.isNotEmpty()) {
+                    Column {
+                        Text(
+                            "Gợi ý tự động nhận diện:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cs.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            sug.take(3).forEach { s ->
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(999.dp))
+                                        .background(if (isDark) cs.surfaceVariant else WarmSageLight)
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        s,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isDark) cs.onSurfaceVariant else WarmSage
+                                    )
                                 }
                             }
                         }
                     }
-
-                    // Trường 2: Từ khóa bổ sung (Tùy chọn)
-                    OutlinedTextField(
-                        value = extra,
-                        onValueChange = { extra = it },
-                        label = { Text("Từ khóa bổ sung (tùy chọn)") },
-                        placeholder = { Text("VD: biệt danh, nick FB, nickname...") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        supportingText = {
-                            Text(
-                                "Thêm từ khóa nhận diện riêng khi tìm kiếm trên FB/IG/Zalo (cách nhau dấu phẩy).",
-                                fontSize = 11.sp
-                            )
-                        }
-                    )
-
-                    // Trường 3: Lời nhắc bản thân (Tùy chọn)
-                    OutlinedTextField(
-                        value = note,
-                        onValueChange = { note = it },
-                        label = { Text("Lời nhắc bản thân (tùy chọn)") },
-                        placeholder = { Text("VD: Đừng vào xem nữa, tập trung cho bản thân") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        supportingText = {
-                            Text(
-                                "Lời nhắn hiện trên màn hình can thiệp khi bạn chuẩn bị stalk người này.",
-                                fontSize = 11.sp
-                            )
-                        }
-                    )
                 }
-            },
-            confirmButton = {
+
+                // Trường 2: Từ khóa bổ sung (Tùy chọn)
+                OutlinedTextField(
+                    value = extra,
+                    onValueChange = { extra = it },
+                    label = { Text("Từ khóa bổ sung (tùy chọn)") },
+                    placeholder = { Text("VD: biệt danh, nick FB, nickname...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    supportingText = {
+                        Text(
+                            "Thêm từ khóa nhận diện riêng khi tìm kiếm trên FB/IG/Zalo (cách nhau dấu phẩy).",
+                            fontSize = 11.sp
+                        )
+                    }
+                )
+
+                // Trường 3: Lời nhắc bản thân (Tùy chọn)
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("Lời nhắc bản thân (tùy chọn)") },
+                    placeholder = { Text("VD: Đừng vào xem nữa, tập trung cho bản thân") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    supportingText = {
+                        Text(
+                            "Lời nhắn hiện trên màn hình can thiệp khi bạn chuẩn bị stalk người này.",
+                            fontSize = 11.sp
+                        )
+                    }
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                // Nút Lưu nổi bật, trải dài toàn chiều ngang dễ chạm
                 Button(
                     enabled = name.isNotBlank(),
                     onClick = {
@@ -822,28 +866,27 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                             pendingGoal,
                             extra.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                         )
-                        showAddDialog = false
+                        showAddSheet = false
                         name = ""; note = ""; extra = ""
                     },
-                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDark) BrandViolet else WarmSage
+                        containerColor = if (isDark) BrandViolet else Color(0xFF1E88E5),
+                        disabledContainerColor = cs.surfaceVariant
                     )
                 ) {
-                    Text("LƯU VÀO DANH SÁCH", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showAddDialog = false
-                        name = ""; note = ""; extra = ""
-                    }
-                ) {
-                    Text("Hủy")
+                    Text(
+                        "LƯU VÀO DANH SÁCH",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                 }
             }
-        )
+        }
     }
 
     // Dialog: Xác nhận xóa người né
@@ -900,7 +943,7 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddDialog = true },
+                onClick = { showAddSheet = true },
                 containerColor = if (isDark) BrandViolet else Color(0xFF1E88E5),
                 contentColor = Color.White,
                 shape = CircleShape,
@@ -917,37 +960,23 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header
+            // Header (clean, no duplicate button)
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "BLOCK LIST",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = cs.onSurfaceVariant,
-                            letterSpacing = 1.2.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text("Danh sách né", style = MaterialTheme.typography.displayMedium)
-                        Text(
-                            "${persons.size} người đang được theo dõi và bảo vệ",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = cs.onSurfaceVariant
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = { showAddDialog = true },
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) BrandViolet else Color(0xFF1E88E5))
-                    ) {
-                        Text("+ Thêm", fontWeight = FontWeight.Bold, color = if (isDark) BrandViolet else Color(0xFF1E88E5))
-                    }
+                Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                    Text(
+                        "BLOCK LIST",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cs.onSurfaceVariant,
+                        letterSpacing = 1.2.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text("Danh sách né", style = MaterialTheme.typography.displayMedium)
+                    Text(
+                        "${persons.size} người đang được theo dõi và bảo vệ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = cs.onSurfaceVariant
+                    )
                 }
             }
 
