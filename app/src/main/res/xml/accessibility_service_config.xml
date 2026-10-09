@@ -4,16 +4,15 @@
   Anti-Stalk is not a disability-support tool, so on Google Play it must go
   through prominent disclosure + Play Console accessibility declaration.
   For MVP we distribute via sideload APK, Play review comes later.
+
+  Restricting packageNames in XML reduces battery consumption and unwanted system events.
+  NOTE: If adding a new monitored app in MonitoredPackages.kt, its package name must also
+  be added here, or remove this attribute to allow dynamic package filtering in code.
 -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeViewTextChanged|typeViewFocused|typeWindowContentChanged|typeViewClicked|typeViewTextSelectionChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:canRetrieveWindowContent="true"
-    <!--
-      Restricting packageNames in XML reduces battery consumption and unwanted system events.
-      NOTE: If adding a new monitored app in MonitoredPackages.kt, its package name must also
-      be added here, or remove this attribute to allow dynamic package filtering in code.
-    -->
     android:packageNames="com.facebook.katana,com.facebook.orca,com.instagram.android,com.zing.zalo"
     android:description="@string/accessibility_description"
     android:notificationTimeout="100" />
