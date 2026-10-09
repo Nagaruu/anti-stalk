@@ -244,7 +244,7 @@ fun OnboardingScreen(onDone: (goal: String) -> Unit) {
             )
         ) {
             Text(
-                "BẮT ĐẦU NGAY →",
+                "Bắt đầu ngay →",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.5.sp,

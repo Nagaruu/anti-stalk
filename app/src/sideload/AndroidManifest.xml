@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sideload flavor only: GitHub-Releases self-update needs install permission.
+     The play flavor MUST NOT include this (Play Device & Network Abuse policy). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+</manifest>

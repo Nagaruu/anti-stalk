@@ -179,9 +179,9 @@ fun InterventionOverlay(
                         ) {
                             Text(
                                 if (vi) {
-                                    if (isDark) "THÔI, TÔI ĐI RA" else "🌿 THÔI, TÔI ĐI RA!"
-                                } else "NAH, I'M OUT",
-                                fontWeight = FontWeight.Bold
+                                    if (isDark) "Thôi, tôi đi ra" else "🌿 Thôi, tôi đi ra!"
+                                } else "Nah, I'm out",
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                         Spacer(Modifier.height(8.dp))

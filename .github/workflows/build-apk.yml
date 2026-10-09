@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     # Pinned: GitHub-hosted 24.04 ships a full Android SDK
-    # (platform android-34, build-tools, cmdline-tools, ANDROID_SDK_ROOT),
+    # (platforms, build-tools, cmdline-tools, ANDROID_SDK_ROOT),
     # so no setup-android step is needed. Avoids sdkmanager exit-code-1
     # failures seen with android-actions/setup-android@v3.
     runs-on: ubuntu-24.04
@@ -31,6 +31,18 @@ jobs:
           distribution: temurin
           java-version: 17
           cache: gradle
+
+      - name: Ensure Android 35 SDK present
+        run: |
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          echo "SDK at $SDK"
+          ls "$SDK/platforms" || true
+          if [ ! -d "$SDK/platforms/android-35" ]; then
+            echo "Installing android-35 platform + build-tools…"
+            yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          else
+            echo "android-35 already present"
+          fi
 
       - name: Set up Gradle 8.7
         uses: gradle/actions/setup-gradle@v6
@@ -88,13 +100,20 @@ jobs:
 
       # Matcher / text-normalization logic is pure JVM: run it before the APK
       # build so a broken keyword match fails fast instead of shipping.
+      # Sideload flavor = the shippable APK with GitHub self-update.
       - name: Run unit tests
-        run: gradle testDebugUnitTest --stacktrace
+        run: gradle testSideloadDebugUnitTest --stacktrace
 
-      - name: Build debug APK
+      - name: Build sideload debug APK
         env:
           BUILD_NUMBER: ${{ steps.ver.outputs.num }}
-        run: gradle assembleDebug --stacktrace
+        run: |
+          gradle assembleSideloadDebug --stacktrace
+          # Keep the historic path/asset name (app-debug.apk) so the in-app
+          # updater (releases/latest looks for APK_NAME) keeps working.
+          mkdir -p app/build/outputs/apk/debug
+          cp app/build/outputs/apk/sideload/debug/app-sideload-debug.apk app/build/outputs/apk/debug/app-debug.apk
+          ls -l app/build/outputs/apk/debug/
 
       # Fails the build if the APK is not signed with the stable keystore or
       # if the signer drifted from expected SHA-256.

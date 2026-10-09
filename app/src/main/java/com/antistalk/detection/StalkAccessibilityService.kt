@@ -207,6 +207,12 @@ class StalkAccessibilityService : AccessibilityService() {
             return null
         }
         val now = System.currentTimeMillis()
+        // Stale rescan (re-opened app still shows the old query): stay quiet after "Đi ra".
+        // Fresh typing (event/focused/editable) always bypasses so repeat-roast still works.
+        if (src == "active-search" && isInLeaveQuiet(instance, m.personName, now)) {
+            DetectionLog.add(pkg, src, snippet, "leave-quiet:${m.personName}")
+            return null
+        }
         val key = "${m.personName}|$pkg"
         if (now < (suppressedPersonsUntil[key] ?: 0L) || now < (suppressedPersonsUntil["${m.personName}|*"] ?: 0L)) {
             DetectionLog.add(pkg, src, snippet, "suppressed:${m.personName}")
@@ -249,6 +255,15 @@ class StalkAccessibilityService : AccessibilityService() {
             for (title in candidates) {
                 val m = Matcher.findMatch(title, keywords) ?: continue
                 val now = System.currentTimeMillis()
+                // Same profile/title still on screen after "Đi ra" -> stay quiet.
+                // Only a fresh keystroke inside SUBMIT_WINDOW_MS may promote to SEARCH_SUBMITTED.
+                if (isInLeaveQuiet(instance, m.personName, now)) {
+                    val key = "${m.personName}|$pkg"
+                    if (now - (lastKeystrokeMatchAt[key] ?: 0L) > SUBMIT_WINDOW_MS) {
+                        DetectionLog.add(pkg, "title", title.take(24), "leave-quiet:${m.personName}")
+                        return
+                    }
+                }
                 val key = "${m.personName}|$pkg"
                 if (now < (suppressedPersonsUntil[key] ?: 0L) || now < (suppressedPersonsUntil["${m.personName}|*"] ?: 0L)) continue
                 if (now - (lastKeystrokeMatchAt[key] ?: 0L) <= SUBMIT_WINDOW_MS) {
@@ -284,8 +299,16 @@ class StalkAccessibilityService : AccessibilityService() {
     private fun fireTrigger(pkg: String, m: Matcher.Match, trigger: String, confidence: String) {
         if (OverlayManager.isShowing() || System.currentTimeMillis() < suppressUntil) return
         val now = System.currentTimeMillis()
+        // Last defense: MEDIUM profile-title rescan must never consume the repeat
+        // slot nor popup during leave-quiet — only HIGH (fresh typing/submit) may.
+        if (confidence != "HIGH" && isInLeaveQuiet(instance, m.personName, now)) {
+            DetectionLog.add(pkg, trigger, m.personName.take(24), "leave-quiet")
+            return
+        }
         val isRepeat = (now - lastLeftAt < 180_000L) && lastLeftPerson.equals(m.personName, ignoreCase = true)
-        if (isRepeat) {
+        // Consume the repeat slot only on a fresh HIGH search; a stale MEDIUM
+        // title must leave lastLeftAt intact for the next real typing.
+        if (isRepeat && confidence == "HIGH") {
             lastLeftAt = 0L
         }
         scope.launch {
@@ -319,25 +342,29 @@ class StalkAccessibilityService : AccessibilityService() {
 
         /**
          * Disarms keystroke matches and handles suppression after overlay decision.
-         * If [isLeave] is true (user tapped "THÔI, TÔI ĐI RA"), we suppress for 1.5s
-         * to let the window transition back to Home, and record a recent leave attempt.
-         * If they search again, it will trigger immediately with a repeat-attempt roast!
-         * If [isLeave] is false (user tapped "Tôi vẫn muốn xem"), we grant 5 minutes of peace.
+         * Play-safe + anti-double-popup: HOME only, no BACK automation.
+         * - isLeave=true ("THÔI, TÔI ĐI RA"): 2s transition suppress for the
+         *   Home animation + 60s LEAVE_QUIET for stale UI (same search text /
+         *   same profile title still on screen when the user comes back).
+         *   Stale rescan via processTitle/active-search is ignored during quiet,
+         *   but a FRESH keystroke (processTyped src=event/focused/editable)
+         *   still fires immediately with a repeat-attempt roast.
+         * - isLeave=false ("Tôi vẫn muốn xem"): 60s peace for this session.
          */
         fun onUserDismiss(personName: String, pkg: String = "", isLeave: Boolean = true) {
             val svc = instance ?: return
             val now = System.currentTimeMillis()
-            svc.suppressUntil = now + 1_200L // 1.2s transition suppression
+            svc.suppressUntil = now + TRANSITION_SUPPRESS_MS
             if (personName.isNotBlank()) {
                 val prefix = personName.trim()
                 svc.lastKeystrokeMatchAt.keys.removeAll { it.startsWith(prefix, ignoreCase = true) }
                 if (isLeave) {
                     svc.lastLeftPerson = personName
                     svc.lastLeftAt = now
-                    // Allow quick re-detection when searching again (wipe all lockout keys for this person)
-                    svc.lastTriggerAt.keys.removeAll { it.startsWith(prefix, ignoreCase = true) }
-                    svc.lastSubmitAt.keys.removeAll { it.startsWith(prefix, ignoreCase = true) }
-                    svc.lastProfileTriggerAt.keys.removeAll { it.startsWith(prefix, ignoreCase = true) }
+                    // Do NOT wipe lastTriggerAt/lastSubmitAt/lastProfileTriggerAt here:
+                    // wiping is what caused the 2nd popup on the unchanged screen.
+                    // Cooldowns are kept so a stale rescan stays quiet; fresh typing
+                    // bypasses via the submit-window / repeat path in processTyped.
                     svc.suppressedPersonsUntil.keys.removeAll { it.startsWith(prefix, ignoreCase = true) }
                 } else {
                     // User chose to stay: give 60s peace period for this viewing session
@@ -348,8 +375,19 @@ class StalkAccessibilityService : AccessibilityService() {
             }
         }
 
+        /** True when [personName] left via "Đi ra" recently: stale UI must stay quiet. */
+        fun isInLeaveQuiet(svc: StalkAccessibilityService?, personName: String, now: Long): Boolean {
+            if (svc == null || personName.isBlank()) return false
+            return now - svc.lastLeftAt < LEAVE_QUIET_MS &&
+                svc.lastLeftPerson.equals(personName.trim(), ignoreCase = true)
+        }
+
         /** Spam guard for repeat keystroke matches, per person+app: 2.5s is plenty while typing. */
         const val KEYSTROKE_COOLDOWN_MS = 2_500L
+        /** Home-transition suppress after "Đi ra" (covers Home animation + FB resume). */
+        const val TRANSITION_SUPPRESS_MS = 2_000L
+        /** Stale-UI quiet after "Đi ra": same search/title rescan is ignored this long. */
+        const val LEAVE_QUIET_MS = 60_000L
         /** Cooldown between profile title inspections: 15s so reading a profile doesn't spam. */
         const val PROFILE_COOLDOWN_MS = 15_000L
         /** A new window this soon after typing a matched name = user pressed search. */

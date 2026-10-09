@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.antistalk.BuildConfig
 import com.antistalk.data.local.entity.StalkEvent
 import com.antistalk.ui.MainViewModel
 import com.antistalk.ui.theme.AccentLavender
@@ -1277,6 +1278,13 @@ fun SettingsScreen(vm: MainViewModel) {
                     color = cs.onSurfaceVariant
                 )
 
+                if (BuildConfig.IS_PLAY) {
+                    Text(
+                        "Bản Play cập nhật qua CH Play — không cần kiểm tra thủ công 😌",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cs.onSurfaceVariant
+                    )
+                } else {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Chỉ tải update qua Wi-Fi", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
@@ -1304,7 +1312,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Text("XEM HƯỚNG DẪN CHUYỂN ĐỔI BẢN ${s.info.tag}")
+                            Text("Xem hướng dẫn chuyển đổi bản ${s.info.tag}")
                         }
                     is MainViewModel.UpdateState.ReadyToInstall ->
                         Button(
@@ -1312,7 +1320,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Text("CÀI ĐẶT BẢN ${s.info.tag}")
+                            Text("Cài đặt bản ${s.info.tag}")
                         }
                     else -> Unit
                 }
@@ -1323,7 +1331,7 @@ fun SettingsScreen(vm: MainViewModel) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text(if (checking) "ĐANG KIỂM TRA…" else "KIỂM TRA CẬP NHẬT")
+                    Text(if (checking) "Đang kiểm tra…" else "Kiểm tra cập nhật")
                 }
 
                 if (checkFailed) {
@@ -1333,6 +1341,7 @@ fun SettingsScreen(vm: MainViewModel) {
                         color = cs.error
                     )
                 }
+                } // end sideload-only updater UI
             }
         }
 
@@ -1393,7 +1402,43 @@ fun SettingsScreen(vm: MainViewModel) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("KIỂM TRA LẠI CHỮ KÝ")
+                    Text("Kiểm tra lại chữ ký")
+                }
+            }
+        }
+
+        // ─── Privacy ────────────────────────────────────────────────────────
+        var showPrivacy by remember { mutableStateOf(false) }
+        if (showPrivacy) {
+            com.antistalk.ui.screens.PrivacyPolicyDialog(onDismiss = { showPrivacy = false })
+        }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = cs.surface),
+            elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                if (isDark) cs.outlineVariant else cs.outline
+            )
+        ) {
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Riêng tư & minh bạch",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Mọi đối chiếu chạy trên máy. Không đọc tin nhắn, không gửi dữ liệu đi đâu.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = cs.onSurfaceVariant
+                )
+                OutlinedButton(
+                    onClick = { showPrivacy = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Xem chính sách riêng tư")
                 }
             }
         }
@@ -1428,10 +1473,10 @@ fun SettingsScreen(vm: MainViewModel) {
                             vm.wipeAll()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = cs.error)
-                    ) { Text("XÓA HẾT") }
+                    ) { Text("Xóa hết") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showWipeConfirm = false }) { Text("HỦY") }
+                    TextButton(onClick = { showWipeConfirm = false }) { Text("Hủy") }
                 }
             )
         }
@@ -1442,7 +1487,7 @@ fun SettingsScreen(vm: MainViewModel) {
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = cs.error)
         ) {
-            Text("XÓA TOÀN BỘ DỮ LIỆU LOCAL")
+            Text("Xóa toàn bộ dữ liệu máy")
         }
 
         // ─── Debug Diagnostics ────────────────────────────────────────────────
@@ -1487,7 +1532,7 @@ fun SettingsScreen(vm: MainViewModel) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("TẢI LẠI LOG")
+                    Text("Tải lại log")
                 }
             }
         }

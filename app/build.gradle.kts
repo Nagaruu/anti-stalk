@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.antistalk"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.antistalk"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         // BUILD_NUMBER comes from CI: tag number for releases (vN), run number otherwise.
         val buildNumber = System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 1
         versionCode = buildNumber
@@ -37,6 +37,21 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    // Play-safe split: "play" build has no self-update code path (see IS_PLAY
+    // guards + src/sideload manifest for REQUEST_INSTALL_PACKAGES).
+    // Sideload keeps GitHub-Releases updater; Play uses Play update mechanism.
+    flavorDimensions += "dist"
+    productFlavors {
+        create("sideload") {
+            dimension = "dist"
+            buildConfigField("boolean", "IS_PLAY", "false")
+        }
+        create("play") {
+            dimension = "dist"
+            buildConfigField("boolean", "IS_PLAY", "true")
         }
     }
 

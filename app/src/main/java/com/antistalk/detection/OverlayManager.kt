@@ -119,6 +119,16 @@ object OverlayManager {
             setBackgroundColor(Color.parseColor("#B30D0B14"))
             isClickable = true
         }
+        // Play-safe: tap outside the card dismisses without a decision (same as
+        // auto-hide). Blank person keeps only the 2s transition suppress so the
+        // same screen doesn't instantly re-popup; cooldowns still apply.
+        bg.setOnClickListener {
+            try {
+                StalkAccessibilityService.onUserDismiss("", "", isLeave = true)
+            } catch (_: Exception) { }
+            DetectionLog.add("overlay", "tap-outside", personName.take(24), "dismissed")
+            hide()
+        }
 
         val cardShape = android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
@@ -131,6 +141,9 @@ object OverlayManager {
             orientation = LinearLayout.VERTICAL
             background = cardShape
             setPadding(64, 56, 64, 56)
+            // Consume touches on the card so tap-outside (bg) doesn't fire
+            // when the user taps body text (TextViews aren't clickable).
+            isClickable = true
         }
 
         val topAccent = android.view.View(appCtx).apply {
@@ -188,8 +201,8 @@ object OverlayManager {
         }
         val btnOut = Button(appCtx).apply {
             text = if (vi) {
-                if (dark) "THÔI, TÔI ĐI RA" else "🌿 THÔI, TÔI ĐI RA!"
-            } else "NAH, I'M OUT"
+                if (dark) "Thôi, tôi đi ra" else "🌿 Thôi, tôi đi ra!"
+            } else "Nah, I'm out"
             background = btnOutShape
             setTextColor(Color.WHITE)
             textSize = 14f

@@ -42,6 +42,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.antistalk.ui.screens.BackupSection
+import com.antistalk.ui.screens.DisclosureScreen
 import com.antistalk.ui.screens.HomeScreen
 import com.antistalk.ui.screens.OnboardingScreen
 import com.antistalk.ui.screens.PermissionsScreen
@@ -61,7 +62,7 @@ fun AppNav(vm: MainViewModel) {
     // while the flag says onboarding is still pending.
     LaunchedEffect(onboarded) {
         val route = nav.currentDestination?.route ?: return@LaunchedEffect
-        if (!onboarded && route != "onboarding") {
+        if (!onboarded && route == "main") {
             nav.navigate("onboarding") {
                 popUpTo(nav.graph.id) { inclusive = true }
             }
@@ -73,8 +74,17 @@ fun AppNav(vm: MainViewModel) {
             OnboardingScreen(onDone = { g ->
                 goal = g
                 vm.userGoal = g
-                nav.navigate("permissions")
+                nav.navigate("disclosure")
             })
+        }
+        composable("disclosure") {
+            DisclosureScreen(
+                onAccept = {
+                    vm.acceptDisclosure()
+                    nav.navigate("permissions")
+                },
+                onBack = { nav.popBackStack() }
+            )
         }
         composable("permissions") {
             PermissionsScreen(onDone = { vm.setOnboardingDone(); nav.navigate("main") { popUpTo(0) } })

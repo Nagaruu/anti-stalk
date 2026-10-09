@@ -4,13 +4,12 @@
 
     <!-- Overlay for intervention moment. Requested at runtime too. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- Self-update: check GitHub Releases + download + trigger install. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- NOTE (Play): no FOREGROUND_SERVICE* here — unused. No REQUEST_INSTALL_PACKAGES
+         here either — self-update lives only in the sideload flavor
+         (src/sideload/AndroidManifest.xml). Play builds update via Play. -->
 
     <application
         android:name=".AntiStalkApp"

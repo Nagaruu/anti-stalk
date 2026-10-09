@@ -441,7 +441,7 @@ fun HomeScreen(vm: MainViewModel) {
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Text("BẬT ĐỌC MÀN HÌNH")
+                            Text("Bật đọc màn hình")
                         }
                     }
 
@@ -451,7 +451,7 @@ fun HomeScreen(vm: MainViewModel) {
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Text("CẤP QUYỀN VẼ OVERLAY")
+                            Text("Cấp quyền vẽ overlay")
                         }
                     }
 
@@ -476,7 +476,7 @@ fun HomeScreen(vm: MainViewModel) {
                                 containerColor = if (isDark) BrandViolet else WarmSage
                             )
                         ) {
-                            Text("🎯 TEST MÀN CÀ KHỊA", fontWeight = FontWeight.Bold)
+                            Text("🎯 Test màn cà khịa", fontWeight = FontWeight.SemiBold)
                         }
 
                         OutlinedButton(
@@ -874,12 +874,12 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                         .height(50.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDark) BrandViolet else Color(0xFF1E88E5),
+                        containerColor = if (isDark) BrandViolet else WarmSage,
                         disabledContainerColor = cs.surfaceVariant
                     )
                 ) {
                     Text(
-                        "LƯU VÀO DANH SÁCH",
+                        "Lưu vào danh sách",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -916,7 +916,7 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
                                     message = "Đã xóa \"${target.displayName}\"",
-                                    actionLabel = "HOÀN TÁC",
+                                    actionLabel = "Hoàn tác",
                                     duration = SnackbarDuration.Short
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
@@ -944,7 +944,7 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddSheet = true },
-                containerColor = if (isDark) BrandViolet else Color(0xFF1E88E5),
+                containerColor = if (isDark) BrandViolet else WarmSage,
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -1004,7 +1004,7 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                                 .background(
                                     Brush.linearGradient(
                                         if (isDark) listOf(BrandViolet, BrandHotPink)
-                                        else listOf(Color(0xFF1E88E5), Color(0xFF1565C0))
+                                        else listOf(WarmSage, Color(0xFF456B52))
                                     )
                                 ),
                             contentAlignment = Alignment.Center
@@ -1061,7 +1061,7 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
             if (persons.isEmpty()) {
                 item {
                     Card(
-                        modifier = Modifier.fillMaxWidth().clickable { showAddDialog = true },
+                        modifier = Modifier.fillMaxWidth().clickable { showAddSheet = true },
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = cs.surfaceVariant)
                     ) {
@@ -1083,9 +1083,9 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                             Button(
-                                onClick = { showAddDialog = true },
+                                onClick = { showAddSheet = true },
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = if (isDark) BrandViolet else Color(0xFF1E88E5))
+                                colors = ButtonDefaults.buttonColors(containerColor = if (isDark) BrandViolet else WarmSage)
                             ) {
                                 Text("+ Thêm người cần né", color = Color.White)
                             }

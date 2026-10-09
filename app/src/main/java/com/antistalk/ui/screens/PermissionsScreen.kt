@@ -123,7 +123,7 @@ fun PermissionsScreen(onDone: () -> Unit) {
             description = "Cho phép app nhận diện khi bạn gõ tên người cần né trong thanh tìm kiếm.",
             isGranted = accOn,
             icon = "👁️",
-            buttonLabel = if (accOn) "ĐÃ CẤP QUYỀN ✓" else "MỞ CÀI ĐẶT TRỢ NĂNG",
+            buttonLabel = if (accOn) "Đã cấp quyền ✓" else "Mở cài đặt trợ năng",
             onAction = {
                 ctx.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -137,7 +137,7 @@ fun PermissionsScreen(onDone: () -> Unit) {
             description = "Cho phép hiện màn hình 'cà khịa' nhắc nhở ngay khi phát hiện hành vi stalk.",
             isGranted = overlayOn,
             icon = "🪟",
-            buttonLabel = if (overlayOn) "ĐÃ CẤP QUYỀN ✓" else "CẤP QUYỀN HIỂN THỊ",
+            buttonLabel = if (overlayOn) "Đã cấp quyền ✓" else "Cấp quyền hiển thị",
             onAction = { OverlayManager.openOverlaySettings(ctx) }
         )
 
@@ -194,7 +194,7 @@ fun PermissionsScreen(onDone: () -> Unit) {
             )
         ) {
             Text(
-                "TIẾP TỤC",
+                "Tiếp tục",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.5.sp,

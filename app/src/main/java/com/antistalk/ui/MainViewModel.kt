@@ -42,6 +42,12 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
     val stats = MutableStateFlow(AntiStalkRepository.TodayStats(0, 0, 0, "", 0))
     val roastLevel = MutableStateFlow(repo.roastLevel)
     val onboardingDone = MutableStateFlow(repo.onboardingDone)
+    val disclosureAccepted = MutableStateFlow(repo.disclosureAccepted)
+
+    fun acceptDisclosure() {
+        repo.disclosureAccepted = true
+        disclosureAccepted.value = true
+    }
 
     // Self-update state (legacy manual dialog path)
     val updateAvailable = MutableStateFlow<AppUpdater.UpdateInfo?>(null)
@@ -252,6 +258,7 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
             themeMode.value = "system"
             updateWifiOnly.value = true
             onboardingDone.value = false
+            disclosureAccepted.value = false
             detectionStatus.value = DetectionStatus()
             refreshStats()
         }
@@ -261,6 +268,8 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
 
     /** Kick off the APK download for [info]; completion lands in armReady. */
     fun startDownload(ctx: Context, info: AppUpdater.UpdateInfo) {
+        // Play builds update via Play — never download APKs (policy).
+        if (BuildConfig.IS_PLAY) return
         val cur = updateState.value
         if (cur is UpdateState.Downloading && cur.tag == info.tag) return
         updateState.value = UpdateState.Downloading(info.tag)
@@ -280,6 +289,13 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
      * the UI opens the system installer itself. The user only taps Install.
      */
     fun checkUpdate(ctx: Context, force: Boolean = false) {
+        // Play builds update via Play — no GitHub self-update check.
+        if (BuildConfig.IS_PLAY) {
+            if (force) {
+                Toast.makeText(ctx, "Bản Play cập nhật qua CH Play nhé 😌", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
         if (checkingUpdate.value) return
         viewModelScope.launch {
             checkingUpdate.value = true
@@ -343,6 +359,7 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
 
     /** Open the installer for a downloaded update, once per tag (auto path). */
     fun consumeReadyToInstall(ctx: Context) {
+        if (BuildConfig.IS_PLAY) return
         val s = updateState.value as? UpdateState.ReadyToInstall ?: return
         if (s.info.tagNumber <= BuildConfig.VERSION_CODE) return // already installed
         if (AppUpdater.wasPrompted(ctx, s.info.tag)) return
@@ -352,6 +369,7 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
 
     /** Open the installer for a downloaded update (manual retry button). */
     fun openDownloadedInstaller(ctx: Context) {
+        if (BuildConfig.IS_PLAY) return
         if (updateState.value is UpdateState.NeedsMigration) {
             migrationDismissedTag.value = "" // re-offer the guided migration
             return

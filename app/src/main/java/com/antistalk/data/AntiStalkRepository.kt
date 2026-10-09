@@ -31,6 +31,14 @@ class AntiStalkRepository(ctx: Context) {
     var onboardingDone: Boolean
         get() = prefs.getBoolean("onboarding_done", false)
         set(v) { prefs.edit().putBoolean("onboarding_done", v).apply() }
+    /**
+     * Prominent Accessibility disclosure acceptance (Play policy).
+     * Shown as its own screen with a separate checkbox BEFORE the system
+     * Accessibility settings — never bundled with ToS/privacy text.
+     */
+    var disclosureAccepted: Boolean
+        get() = prefs.getBoolean("disclosure_accepted", false)
+        set(v) { prefs.edit().putBoolean("disclosure_accepted", v).apply() }
     var skippedUpdateTag: String
         get() = prefs.getString("skipped_update_tag", "") ?: ""
         set(v) { prefs.edit().putString("skipped_update_tag", v).apply() }
@@ -192,6 +200,7 @@ class AntiStalkRepository(ctx: Context) {
                 put("theme_mode", prefs.getString("theme_mode", "system") ?: "system")
                 put("update_wifi_only", prefs.getBoolean("update_wifi_only", true))
                 put("onboarding_done", prefs.getBoolean("onboarding_done", false))
+                put("disclosure_accepted", prefs.getBoolean("disclosure_accepted", false))
             })
         }
         return root.toString(2)
@@ -256,6 +265,7 @@ class AntiStalkRepository(ctx: Context) {
                 .putString("theme_mode", p.optString("theme_mode", prefs.getString("theme_mode", "system")))
                 .putBoolean("update_wifi_only", p.optBoolean("update_wifi_only", true))
                 .putBoolean("onboarding_done", p.optBoolean("onboarding_done", false) || prefs.getBoolean("onboarding_done", false))
+                .putBoolean("disclosure_accepted", p.optBoolean("disclosure_accepted", false) || prefs.getBoolean("disclosure_accepted", false))
                 .apply()
         }
         seedIfNeeded()
