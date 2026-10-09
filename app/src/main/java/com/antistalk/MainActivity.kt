@@ -20,7 +20,11 @@ class MainActivity : ComponentActivity() {
             val vm: MainViewModel = viewModel(factory = MainViewModelFactory(repo))
             val mode by vm.themeMode.collectAsState()
             AntiStalkTheme(
-                darkTheme = mode == "dark" || (mode != "light" && isSystemInDarkTheme())
+                darkTheme = when (mode) {
+                    "light" -> false
+                    "dark" -> true
+                    else -> isSystemInDarkTheme()
+                }
             ) {
                 AppNav(vm)
             }

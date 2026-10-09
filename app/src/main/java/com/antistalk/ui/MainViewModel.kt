@@ -153,6 +153,22 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
         }
     }
 
+    fun deletePersonWithUndo(person: AvoidedPerson, onDeleted: (restoreAction: () -> Unit) -> Unit) {
+        viewModelScope.launch {
+            val allKeywords = repo.keywordsOnce().filter { it.personId == person.id }.map { it.raw }
+            repo.deletePerson(person.id)
+            StalkAccessibilityService.invalidateCache()
+            refreshStats()
+            onDeleted {
+                viewModelScope.launch {
+                    repo.addPerson(person.displayName, person.note, person.goal, allKeywords)
+                    StalkAccessibilityService.invalidateCache()
+                    refreshStats()
+                }
+            }
+        }
+    }
+
     fun toggleApp(pkg: String, label: String, enabled: Boolean) {
         viewModelScope.launch {
             repo.setAppEnabled(pkg, label, enabled)

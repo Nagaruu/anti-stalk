@@ -26,18 +26,30 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -258,7 +270,7 @@ fun HomeScreen(vm: MainViewModel) {
                         Spacer(Modifier.height(4.dp))
                         Text(
                             if (stats.topName.isNotBlank())
-                                "Trigger nhiều nhất: ${stats.topName} (${stats.topCount}) 🏆"
+                                "Nhắc nhở nhiều nhất: ${stats.topName} (${stats.topCount} lần) 🏆"
                             else "Hệ thống đang hoạt động và bảo vệ bạn",
                             style = MaterialTheme.typography.bodyMedium,
                             color = cs.onSurfaceVariant
@@ -677,123 +689,65 @@ private fun DetectionStatusRow(
     }
 }
 
-// ─── Persons Screen (Tab Né Ai) ────────────────────────────────────────────────
+// ─── Persons Screen (Tab Né Ai - Block List Style) ──────────────────────────
 @Composable
 fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
     val persons by vm.persons.collectAsState()
     val isDark = LocalIsDarkTheme.current
     val cs = MaterialTheme.colorScheme
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    var showAddDialog by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
     var extra by remember { mutableStateOf("") }
+    var note by remember { mutableStateOf("") }
     var personToDelete by remember { mutableStateOf<com.antistalk.data.local.entity.AvoidedPerson?>(null) }
 
-    if (personToDelete != null) {
-        val target = personToDelete!!
+    // Dialog: Thêm người cần né
+    if (showAddDialog) {
         AlertDialog(
-            onDismissRequest = { personToDelete = null },
+            onDismissRequest = {
+                showAddDialog = false
+                name = ""; extra = ""; note = ""
+            },
             title = {
                 Text(
-                    "Xóa khỏi danh sách né?",
+                    "Thêm người cần né",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                Text(
-                    "Bạn có chắc muốn xóa \"${target.displayName}\"? Toàn bộ từ khóa liên quan sẽ bị xóa và Anti-Stalk sẽ không còn cảnh báo cho người này.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = cs.onSurfaceVariant
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        vm.deletePerson(target.id)
-                        personToDelete = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = cs.error)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("Xóa", color = androidx.compose.ui.graphics.Color.White)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { personToDelete = null }) {
-                    Text("Hủy")
-                }
-            }
-        )
-    }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        item {
-            Text(
-                "DANH SÁCH BẢO VỆ",
-                style = MaterialTheme.typography.labelSmall,
-                color = cs.onSurfaceVariant,
-                letterSpacing = 1.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(2.dp))
-            Text("Người cần tránh", style = MaterialTheme.typography.displayMedium)
-            Text(
-                "Anti-Stalk sẽ can thiệp ngay khi bạn tìm kiếm tên hoặc từ khóa liên quan.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = cs.onSurfaceVariant
-            )
-        }
-
-        // Add Person Card
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = cs.surface),
-                elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (isDark) cs.outlineVariant else cs.outline
-                )
-            ) {
-                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        "Thêm người cần né",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
+                    // Trường 1: Tên hiển thị (Bắt buộc)
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Tên hiển thị (VD: Nguyễn Văn A)") },
+                        label = { Text("Tên người cần né *") },
+                        placeholder = { Text("VD: Nguyễn Văn A") },
+                        singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        supportingText = {
+                            Text(
+                                "Tên hiển thị trong cảnh báo và để hệ thống tự động sinh từ khóa quét cơ bản.",
+                                fontSize = 11.sp
+                            )
+                        }
                     )
 
-                    OutlinedTextField(
-                        value = extra,
-                        onValueChange = { extra = it },
-                        label = { Text("Từ khóa thêm (cách nhau dấu phẩy)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = note,
-                        onValueChange = { note = it },
-                        label = { Text("Ghi chú / Lời nhắc bản thân (tùy chọn)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp)
-                    )
-
+                    // Gợi ý từ khóa tự động
                     val sug = remember(name) { vm.suggestedKeywords(name) }
                     if (name.isNotBlank() && sug.isNotEmpty()) {
                         Column {
                             Text(
-                                "Gợi ý tự động:",
+                                "Gợi ý tự động nhận diện:",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = cs.onSurfaceVariant
                             )
@@ -819,110 +773,296 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                                 }
                             }
                         }
-                    } else if (name.isNotBlank()) {
+                    }
+
+                    // Trường 2: Từ khóa bổ sung (Tùy chọn)
+                    OutlinedTextField(
+                        value = extra,
+                        onValueChange = { extra = it },
+                        label = { Text("Từ khóa bổ sung (tùy chọn)") },
+                        placeholder = { Text("VD: biệt danh, nick FB, nickname...") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        supportingText = {
+                            Text(
+                                "Thêm từ khóa nhận diện riêng khi tìm kiếm trên FB/IG/Zalo (cách nhau dấu phẩy).",
+                                fontSize = 11.sp
+                            )
+                        }
+                    )
+
+                    // Trường 3: Lời nhắc bản thân (Tùy chọn)
+                    OutlinedTextField(
+                        value = note,
+                        onValueChange = { note = it },
+                        label = { Text("Lời nhắc bản thân (tùy chọn)") },
+                        placeholder = { Text("VD: Đừng vào xem nữa, tập trung cho bản thân") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        supportingText = {
+                            Text(
+                                "Lời nhắn hiện trên màn hình can thiệp khi bạn chuẩn bị stalk người này.",
+                                fontSize = 11.sp
+                            )
+                        }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = name.isNotBlank(),
+                    onClick = {
+                        vm.addPerson(
+                            name.trim(),
+                            note.trim(),
+                            pendingGoal,
+                            extra.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                        )
+                        showAddDialog = false
+                        name = ""; note = ""; extra = ""
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDark) BrandViolet else WarmSage
+                    )
+                ) {
+                    Text("LƯU VÀO DANH SÁCH", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showAddDialog = false
+                        name = ""; note = ""; extra = ""
+                    }
+                ) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
+    // Dialog: Xác nhận xóa người né
+    if (personToDelete != null) {
+        val target = personToDelete!!
+        AlertDialog(
+            onDismissRequest = { personToDelete = null },
+            title = {
+                Text(
+                    "Xóa khỏi danh sách né?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    "Bạn có chắc muốn xóa \"${target.displayName}\"? Hệ thống sẽ ngừng phát hiện người này.\n\n(Bạn có thể bấm \"Hoàn tác\" ngay sau khi xóa để khôi phục lại)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = cs.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        personToDelete = null
+                        vm.deletePersonWithUndo(target) { restoreAction ->
+                            scope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    message = "Đã xóa \"${target.displayName}\"",
+                                    actionLabel = "HOÀN TÁC",
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    restoreAction()
+                                }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = cs.error),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Xác nhận xóa", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { personToDelete = null }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = if (isDark) BrandViolet else Color(0xFF1E88E5),
+                contentColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "Thêm người cần né")
+            }
+        }
+    ) { pad ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(pad)
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Header
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Tên này quá chung để tự nhận diện — hãy thêm từ khóa riêng (VD: biệt danh, tên kèm chữ lót) ở ô phía trên.",
+                            "BLOCK LIST",
                             style = MaterialTheme.typography.labelSmall,
+                            color = cs.onSurfaceVariant,
+                            letterSpacing = 1.2.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text("Danh sách né", style = MaterialTheme.typography.displayMedium)
+                        Text(
+                            "${persons.size} người đang được theo dõi và bảo vệ",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = cs.onSurfaceVariant
                         )
                     }
 
-                    Button(
-                        enabled = name.isNotBlank(),
-                        onClick = {
-                            vm.addPerson(
-                                name.trim(),
-                                note.trim(),
-                                pendingGoal,
-                                extra.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                            )
-                            name = ""; note = ""; extra = ""
-                        },
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isDark) BrandViolet else WarmSage
-                        )
+                    OutlinedButton(
+                        onClick = { showAddDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) BrandViolet else Color(0xFF1E88E5))
                     ) {
-                        Text("THÊM NGƯỜI NÀY", fontWeight = FontWeight.Bold)
+                        Text("+ Thêm", fontWeight = FontWeight.Bold, color = if (isDark) BrandViolet else Color(0xFF1E88E5))
                     }
                 }
             }
-        }
 
-        // List of Persons
-        items(persons, key = { it.id }) { p ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = cs.surface),
-                elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 1.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (isDark) cs.outlineVariant else cs.outline
-                )
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            // Clean list of persons matching the reference image
+            items(persons, key = { it.id }) { p ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = cs.surface),
+                    elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 1.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (isDark) cs.outlineVariant else cs.outline
+                    )
                 ) {
-                    // Avatar circle
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    if (isDark) listOf(BrandViolet, BrandHotPink)
-                                    else listOf(WarmSage, AccentTerracotta)
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            p.displayName.take(1).uppercase(),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
-                        )
-                    }
-
-                    Spacer(Modifier.width(14.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            p.displayName,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = cs.onSurface
-                        )
-                        if (p.note.isNotBlank()) {
+                        // Avatar circle (matches the blue avatar circle in reference screenshot)
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        if (isDark) listOf(BrandViolet, BrandHotPink)
+                                        else listOf(Color(0xFF1E88E5), Color(0xFF1565C0))
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                p.note,
-                                style = MaterialTheme.typography.bodyMedium,
+                                p.displayName.take(1).uppercase(),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                        }
+
+                        Spacer(Modifier.width(14.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                p.displayName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = cs.onSurface
+                            )
+                            if (p.note.isNotBlank()) {
+                                Text(
+                                    p.note,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = cs.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            } else if (p.goal.isNotBlank()) {
+                                Text(
+                                    "Mục tiêu: ${p.goal}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isDark) BrandHotPink else AccentTerracotta
+                                )
+                            }
+                        }
+
+                        // Subtle block / remove icon button (matches reference image's ⊘ icon!)
+                        IconButton(
+                            onClick = { personToDelete = p }
+                        ) {
+                            Text(
+                                "⊘",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
                                 color = cs.onSurfaceVariant
                             )
                         }
-                        if (p.goal.isNotBlank()) {
-                            Text(
-                                "Mục tiêu: ${p.goal}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (isDark) BrandHotPink else AccentTerracotta
-                            )
-                        }
-                    }
-
-                    TextButton(
-                        onClick = { personToDelete = p },
-                        colors = ButtonDefaults.textButtonColors(contentColor = cs.error)
-                    ) {
-                        Text("Xóa")
                     }
                 }
             }
-        }
 
-        if (persons.isEmpty()) {
+            if (persons.isEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable { showAddDialog = true },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = cs.surfaceVariant)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(28.dp).fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text("🛡️", fontSize = 42.sp)
+                            Text(
+                                "Chưa có ai trong danh sách né",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "Bấm nút \"+\" bên dưới để thêm người đầu tiên bạn muốn tránh stalk.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = cs.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Button(
+                                onClick = { showAddDialog = true },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = if (isDark) BrandViolet else Color(0xFF1E88E5))
+                            ) {
+                                Text("+ Thêm người cần né", color = Color.White)
+                            }
+                        }
+                    }
+                }
+            }
+
             item {
                 Box(
                     modifier = Modifier
@@ -938,10 +1078,10 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                     )
                 }
             }
-        }
 
-        item {
-            Spacer(Modifier.height(30.dp))
+            item {
+                Spacer(Modifier.height(60.dp))
+            }
         }
     }
 }
