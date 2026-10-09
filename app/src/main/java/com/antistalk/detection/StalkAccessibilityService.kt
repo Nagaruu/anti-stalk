@@ -49,6 +49,10 @@ class StalkAccessibilityService : AccessibilityService() {
     private val lastProfileTriggerAt: MutableMap<String, Long> = ConcurrentHashMap()
     private val lastKeystrokeMatchAt: MutableMap<String, Long> = ConcurrentHashMap()
     private val lastSubmitAt: MutableMap<String, Long> = ConcurrentHashMap()
+    // Normalized query text that fired the popup, per person+app. Used to tell
+    // resume-replay (app redraws the same text when returning to foreground)
+    // apart from genuinely new typing after "Đi ra" — pure passive filtering.
+    private val lastFiredQuery: MutableMap<String, String> = ConcurrentHashMap()
     private var lastFocusReadAt: Long = 0L
     private var lastTitleCheckAt: Long = 0L
     private var lastRawLogAt: Long = 0L
@@ -207,13 +211,30 @@ class StalkAccessibilityService : AccessibilityService() {
             return null
         }
         val now = System.currentTimeMillis()
-        // Stale rescan (re-opened app still shows the old query): stay quiet after "Đi ra".
-        // Fresh typing (event/focused/editable) always bypasses so repeat-roast still works.
-        if (src == "active-search" && isInLeaveQuiet(instance, m.personName, now)) {
-            DetectionLog.add(pkg, src, snippet, "leave-quiet:${m.personName}")
-            return null
-        }
         val key = "${m.personName}|$pkg"
+        if (isInLeaveQuiet(instance, m.personName, now)) {
+            // Stale rescan (re-opened app still shows the old query): stay quiet.
+            if (src == "active-search") {
+                DetectionLog.add(pkg, src, snippet, "leave-quiet:${m.personName}")
+                return null
+            }
+            // Resume-replay (Zalo redraws chat list / restores fields on return):
+            // same text as the query that fired the popup -> quiet. A DIFFERENT
+            // query still fires the repeat roast below. Fresh typing (event /
+            // focused / editable) of new text always bypasses.
+            val norm = try {
+                com.antistalk.core.normalizeText(typed.toString())
+            } catch (_: Exception) {
+                typed.toString()
+            }
+            val fired = lastFiredQuery[key] ?: lastFiredQuery["${m.personName}|*"]
+            if (fired != null && fired.isNotBlank() &&
+                (norm == fired || norm.contains(fired) || fired.contains(norm))
+            ) {
+                DetectionLog.add(pkg, src, snippet, "resume-quiet:${m.personName}")
+                return null
+            }
+        }
         if (now < (suppressedPersonsUntil[key] ?: 0L) || now < (suppressedPersonsUntil["${m.personName}|*"] ?: 0L)) {
             DetectionLog.add(pkg, src, snippet, "suppressed:${m.personName}")
             return null
@@ -222,7 +243,7 @@ class StalkAccessibilityService : AccessibilityService() {
         // the user is still typing this name, so a coming results page counts.
         lastKeystrokeMatchAt[key] = now
         DetectionLog.add(pkg, src, snippet, "match:${m.personName}")
-        maybeTrigger(pkg, m, trigger = "SEARCH_INPUT", confidence = "HIGH")
+        maybeTrigger(pkg, m, trigger = "SEARCH_INPUT", confidence = "HIGH", query = typed.toString())
         return m
     }
 
@@ -246,7 +267,15 @@ class StalkAccessibilityService : AccessibilityService() {
                 }
             }
 
-            // 2. Scan title candidates (profile header, chat header)
+            // 2. Scan title candidates (profile header, chat header).
+            // Search-history page (empty search box, history rows visible) stays
+            // quiet: tapping a history row still fires via the click event path
+            // (SEARCH_INPUT HIGH), but merely seeing it must not popup.
+            val onSearchPage = try {
+                detector.hasEmptySearchBox(root)
+            } catch (_: Exception) {
+                false
+            }
             val candidates = try {
                 detector.titleCandidatesFromRoot(root)
             } catch (_: Exception) {
@@ -269,18 +298,22 @@ class StalkAccessibilityService : AccessibilityService() {
                 if (now - (lastKeystrokeMatchAt[key] ?: 0L) <= SUBMIT_WINDOW_MS) {
                     if (now - (lastSubmitAt[key] ?: 0L) < SUBMIT_COOLDOWN_MS) return
                     lastSubmitAt[key] = now
-                    fireTrigger(pkg, m, trigger = "SEARCH_SUBMITTED", confidence = "HIGH")
+                    fireTrigger(pkg, m, trigger = "SEARCH_SUBMITTED", confidence = "HIGH", query = title)
                 } else {
+                    if (onSearchPage) {
+                        DetectionLog.add(pkg, "title", title.take(24), "history-quiet:${m.personName}")
+                        return
+                    }
                     if (now - (lastProfileTriggerAt[key] ?: 0L) < PROFILE_COOLDOWN_MS) continue
                     lastProfileTriggerAt[key] = now
-                    maybeTrigger(pkg, m, trigger = "PROFILE_TITLE", confidence = "MEDIUM")
+                    maybeTrigger(pkg, m, trigger = "PROFILE_TITLE", confidence = "MEDIUM", query = title)
                 }
                 return
             }
         } catch (_: Exception) { }
     }
 
-    private fun maybeTrigger(pkg: String, m: Matcher.Match, trigger: String, confidence: String) {
+    private fun maybeTrigger(pkg: String, m: Matcher.Match, trigger: String, confidence: String, query: String = "") {
         if (OverlayManager.isShowing() || System.currentTimeMillis() < suppressUntil) return
         val now = System.currentTimeMillis()
         val key = "${m.personName}|$pkg"
@@ -293,12 +326,19 @@ class StalkAccessibilityService : AccessibilityService() {
             return
         }
         lastTriggerAt[key] = now
-        fireTrigger(pkg, m, trigger, confidence)
+        fireTrigger(pkg, m, trigger, confidence, query)
     }
 
-    private fun fireTrigger(pkg: String, m: Matcher.Match, trigger: String, confidence: String) {
+    private fun fireTrigger(pkg: String, m: Matcher.Match, trigger: String, confidence: String, query: String = "") {
         if (OverlayManager.isShowing() || System.currentTimeMillis() < suppressUntil) return
         val now = System.currentTimeMillis()
+        // Remember what fired so resume-replay of the same text stays quiet.
+        if (query.isNotBlank()) {
+            try {
+                lastFiredQuery["${m.personName}|$pkg"] =
+                    com.antistalk.core.normalizeText(query)
+            } catch (_: Exception) { }
+        }
         // Last defense: MEDIUM profile-title rescan must never consume the repeat
         // slot nor popup during leave-quiet — only HIGH (fresh typing/submit) may.
         if (confidence != "HIGH" && isInLeaveQuiet(instance, m.personName, now)) {

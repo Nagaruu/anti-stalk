@@ -29,6 +29,14 @@ interface AppDetector {
      * Useful when re-opening an app or submitting search where text is already present.
      */
     fun findActiveSearchText(root: AccessibilityNodeInfo?): String?
+
+    /**
+     * True when the screen shows an EMPTY editable search box (search page with
+     * no query). Used to tell "history list visible" apart from a real
+     * profile/chat page: history rows must stay quiet, tapping one still fires
+     * via the click event path (SEARCH_INPUT HIGH).
+     */
+    fun hasEmptySearchBox(root: AccessibilityNodeInfo?): Boolean
 }
 
 class GenericDetector(override val packageName: String) : AppDetector {
@@ -92,6 +100,24 @@ class GenericDetector(override val packageName: String) : AppDetector {
             queue.addAll(childrenOf(n))
         }
         return null
+    }
+
+    override fun hasEmptySearchBox(root: AccessibilityNodeInfo?): Boolean {
+        if (root == null) return false
+        var seen = 0
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        while (queue.isNotEmpty() && seen < 120) {
+            val n = queue.removeFirst()
+            seen++
+            val isEdit = try { n.isEditable || n.className?.contains("EditText") == true } catch (_: Exception) { false }
+            if (isEdit) {
+                // Empty text (hint-only counts as empty): user hasn't typed anything.
+                if (n.text?.toString()?.trim().isNullOrEmpty()) return true
+            }
+            queue.addAll(childrenOf(n))
+        }
+        return false
     }
 
     private fun childrenOf(n: AccessibilityNodeInfo): List<AccessibilityNodeInfo> {
