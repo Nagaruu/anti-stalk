@@ -2,16 +2,20 @@ package com.antistalk.ui.screens
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -726,6 +730,17 @@ fun StatsScreen(vm: MainViewModel) {
     var viewMode by remember { mutableStateOf("grouped") }
     var selectedPersonFilter by remember { mutableStateOf<String?>(null) }
 
+    val groupedByPerson = remember(periodEvents) {
+        periodEvents.groupBy { it.personName }
+            .toList()
+            .sortedByDescending { it.second.size }
+    }
+
+    val displayedTimelineEvents = remember(periodEvents, selectedPersonFilter) {
+        if (selectedPersonFilter == null) periodEvents.take(50)
+        else periodEvents.filter { it.personName == selectedPersonFilter }.take(50)
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -919,13 +934,6 @@ fun StatsScreen(vm: MainViewModel) {
                 }
             }
         } else if (viewMode == "grouped") {
-            // Group by Person / Streak Leaderboard
-            val groupedByPerson = remember(periodEvents) {
-                periodEvents.groupBy { it.personName }
-                    .toList()
-                    .sortedByDescending { it.second.size }
-            }
-
             items(groupedByPerson) { (pName, pEvents) ->
                 val rank = groupedByPerson.indexOfFirst { it.first == pName } + 1
                 PersonLeaderboardCard(
@@ -973,11 +981,6 @@ fun StatsScreen(vm: MainViewModel) {
                         )
                     }
                 }
-            }
-
-            val displayedTimelineEvents = remember(periodEvents, selectedPersonFilter) {
-                if (selectedPersonFilter == null) periodEvents.take(50)
-                else periodEvents.filter { it.personName == selectedPersonFilter }.take(50)
             }
 
             items(displayedTimelineEvents) { e ->
@@ -1171,7 +1174,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .border(1.5.dp, itemBorder, RoundedCornerShape(14.dp))
+                                .border(1.5.dp, color = itemBorder, shape = RoundedCornerShape(14.dp))
                                 .background(itemBg)
                                 .clickable {
                                     vm.setRoastLevel(lv)
