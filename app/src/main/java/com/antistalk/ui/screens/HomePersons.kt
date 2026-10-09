@@ -964,7 +964,7 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                     Text(
-                        "BLOCK LIST",
+                        "DANH SÁCH CHẶN / NÉ",
                         style = MaterialTheme.typography.labelSmall,
                         color = cs.onSurfaceVariant,
                         letterSpacing = 1.2.sp,

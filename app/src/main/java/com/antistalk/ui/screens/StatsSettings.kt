@@ -36,6 +36,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -756,7 +758,7 @@ fun StatsScreen(vm: MainViewModel) {
                 fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.height(2.dp))
-            Text("Analytics", style = MaterialTheme.typography.displayMedium)
+            Text("Phân tích chi tiết", style = MaterialTheme.typography.displayMedium)
             Text(
                 "Theo dõi thói quen, mức độ kiên định và kết quả can thiệp 😌",
                 style = MaterialTheme.typography.bodyMedium,
@@ -1072,7 +1074,7 @@ fun SettingsScreen(vm: MainViewModel) {
         ) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(
-                    "APPEARANCE",
+                    "GIAO DIỆN",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = cs.onSurfaceVariant,
@@ -1200,7 +1202,7 @@ fun SettingsScreen(vm: MainViewModel) {
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                                     fontSize = 14.sp,
                                     color = if (isSelected) {
-                                        if (isDark) BrandHotPink else WarmSage
+                                        if (isDark) Color(0xFFDDD6FE) else Color(0xFF1E3A28)
                                     } else cs.onSurface
                                 )
                                 Spacer(Modifier.height(2.dp))
@@ -1212,23 +1214,15 @@ fun SettingsScreen(vm: MainViewModel) {
                                 )
                             }
 
-                            if (isSelected) {
-                                Spacer(Modifier.width(8.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(999.dp))
-                                        .background(if (isDark) Color(0x3334D399) else WarmSageLight)
-                                        .border(1.dp, if (isDark) MintGreen else WarmSage, RoundedCornerShape(999.dp))
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                                ) {
-                                    Text(
-                                        "ĐANG DÙNG ✓",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isDark) MintGreen else WarmSage
-                                    )
-                                }
-                            }
+                            Spacer(Modifier.width(10.dp))
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = null,
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = if (isDark) BrandViolet else WarmSage,
+                                    unselectedColor = if (isDark) cs.outlineVariant else cs.outline
+                                )
+                            )
                         }
                     }
                 }
@@ -1346,6 +1340,7 @@ fun SettingsScreen(vm: MainViewModel) {
         }
 
         // ─── Signing certificate diagnostics ─────────────────────────────────
+        var showSigDetails by remember { mutableStateOf(false) }
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(22.dp),
@@ -1357,28 +1352,41 @@ fun SettingsScreen(vm: MainViewModel) {
             )
         ) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    "Chữ ký cài đặt",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Chữ ký cài đặt",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    TextButton(onClick = { showSigDetails = !showSigDetails }) {
+                        Text(
+                            if (showSigDetails) "Ẩn chi tiết" else "Xem chi tiết",
+                            fontSize = 13.sp,
+                            color = if (isDark) MintGreen else WarmSage
+                        )
+                    }
+                }
                 val sig = signature
                 if (sig == null) {
                     Text("Đang đọc chữ ký…", style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
                 } else {
-                    Text(
-                        "Bản đang cài: ${com.antistalk.core.SigningInfo.shortSha(sig.installedSha)}",
-                        style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
-                    )
-                    Text(
-                        "Khoá chính thức: ${com.antistalk.core.SigningInfo.shortSha(sig.expectedSha)}",
-                        style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
-                    )
                     if (sig.isReleaseKey) {
-                        Text(
-                            "✓ Khớp khoá chính thức — cập nhật chạy 1 chạm.",
-                            style = MaterialTheme.typography.labelSmall, color = WarmSage
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("✓", color = if (isDark) MintGreen else WarmSage, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text(
+                                "Bản cài đặt hợp lệ (sẵn sàng tự động cập nhật)",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isDark) MintGreen else WarmSage
+                            )
+                        }
                     } else {
                         Box(
                             modifier = Modifier
@@ -1396,13 +1404,34 @@ fun SettingsScreen(vm: MainViewModel) {
                             )
                         }
                     }
-                }
-                OutlinedButton(
-                    onClick = { vm.refreshSignature(ctx) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Kiểm tra lại chữ ký")
+
+                    if (showSigDetails) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(cs.surfaceVariant)
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                "Bản đang cài: ${com.antistalk.core.SigningInfo.shortSha(sig.installedSha)}",
+                                style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
+                            )
+                            Text(
+                                "Khoá chính thức: ${com.antistalk.core.SigningInfo.shortSha(sig.expectedSha)}",
+                                style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            OutlinedButton(
+                                onClick = { vm.refreshSignature(ctx) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Kiểm tra lại chữ ký", fontSize = 13.sp)
+                            }
+                        }
+                    }
                 }
             }
         }

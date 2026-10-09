@@ -62,7 +62,7 @@ fun BackupSection(vm: MainViewModel, modifier: Modifier = Modifier, showRestore:
             fontWeight = FontWeight.Bold
         )
         Text(
-            "Xuất file JSON trước khi gỡ app hoặc đổi máy — cài lại xong thì Khôi phục để lấy người né và từ khóa về.",
+            "Sao lưu từ khóa và danh sách né để chuyển sang máy mới.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
