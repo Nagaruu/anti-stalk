@@ -139,17 +139,23 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
                     )
                     Text("1. Xuất sao lưu JSON — giữ file này để lấy dữ liệu về sau.")
                     Text("2. Lưu bản cài đặt APK — file nằm ngoài bộ nhớ app nên sống qua lần gỡ.")
-                    Text("3. Bấm GỠ CÀI ĐẶT.")
+                    Text("3. Bấm Gỡ cài đặt.")
                     Text("4. Mở file APK vừa lưu (trong Tải xuống) để cài, rồi mở app → Cài đặt → Khôi phục.")
                     Spacer(Modifier.height(2.dp))
                     BackupSection(vm, showRestore = false)
                 }
             },
             confirmButton = {
-                Button(onClick = { vm.openUninstallForMigration(ctx) }) { Text("GỠ CÀI ĐẶT") }
+                Button(
+                    onClick = { vm.openUninstallForMigration(ctx) },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = if (isDark) com.antistalk.ui.theme.BrandMossGreenLight else com.antistalk.ui.theme.WarmSageDark,
+                        contentColor = Color.White
+                    )
+                ) { Text("Gỡ cài đặt", fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { vm.dismissMigration() }) { Text("ĐỂ SAU") }
+                TextButton(onClick = { vm.dismissMigration() }) { Text("Để sau") }
             }
         )
     }
@@ -165,17 +171,23 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    // Tag matters: an empty KEY_DOWNLOADED_TAG breaks the
-                    // resume/offline fast-path (savedTag -> Int parse fails).
-                    // The VM path is used instead of AppUpdater.downloadAndInstall
-                    // so a signer mismatch lands in the migration dialog.
-                    vm.skipUpdate()
-                    vm.startDownload(ctx, update ?: return@TextButton)
-                }) { Text("CẬP NHẬT") }
+                Button(
+                    onClick = {
+                        // Tag matters: an empty KEY_DOWNLOADED_TAG breaks the
+                        // resume/offline fast-path (savedTag -> Int parse fails).
+                        // The VM path is used instead of AppUpdater.downloadAndInstall
+                        // so a signer mismatch lands in the migration dialog.
+                        vm.skipUpdate()
+                        vm.startDownload(ctx, update ?: return@Button)
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = if (isDark) com.antistalk.ui.theme.BrandMossGreenLight else com.antistalk.ui.theme.WarmSageDark,
+                        contentColor = Color.White
+                    )
+                ) { Text("Cập nhật", fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { vm.skipUpdate() }) { Text("ĐỂ SAU") }
+                TextButton(onClick = { vm.skipUpdate() }) { Text("Để sau") }
             }
         )
     }
@@ -183,9 +195,9 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
     val isDark = com.antistalk.ui.theme.LocalIsDarkTheme.current
     val cs = MaterialTheme.colorScheme
     val navColors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-        selectedIconColor = if (isDark) com.antistalk.ui.theme.BrandViolet else com.antistalk.ui.theme.WarmSage,
-        selectedTextColor = if (isDark) com.antistalk.ui.theme.BrandViolet else com.antistalk.ui.theme.WarmSage,
-        indicatorColor = if (isDark) Color(0x338B5CF6L) else com.antistalk.ui.theme.WarmSageLight,
+        selectedIconColor = if (isDark) com.antistalk.ui.theme.BrandMossGreenLight else com.antistalk.ui.theme.WarmSageDark,
+        selectedTextColor = if (isDark) com.antistalk.ui.theme.BrandMossGreenLight else com.antistalk.ui.theme.WarmSageDark,
+        indicatorColor = if (isDark) Color(0x336EAA81) else com.antistalk.ui.theme.WarmSageLight,
         unselectedIconColor = cs.onSurfaceVariant,
         unselectedTextColor = cs.onSurfaceVariant
     )

@@ -35,10 +35,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.antistalk.ui.theme.BrandMossGreenLight
 import com.antistalk.ui.theme.BrandViolet
 import com.antistalk.ui.theme.LocalIsDarkTheme
 import com.antistalk.ui.theme.MintGreen
 import com.antistalk.ui.theme.WarmSage
+import com.antistalk.ui.theme.WarmSageDark
 import com.antistalk.ui.theme.WarmSageLight
 
 /**
@@ -141,7 +143,8 @@ fun DisclosureScreen(
                 .height(52.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDark) BrandViolet else WarmSage
+                containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                contentColor = Color.White
             )
         ) {
             Text(

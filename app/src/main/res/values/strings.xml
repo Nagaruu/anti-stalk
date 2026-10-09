@@ -4,6 +4,6 @@
     <string name="accessibility_description">Anti-Stalk quan sát tên bạn gõ hoặc tiêu đề màn hình trong các app mạng xã hội bạn đã chọn (Facebook, Messenger, Instagram, Zalo) để phát hiện khi bạn sắp stalk người cần tránh. Mọi xử lý đều trên máy, không gửi dữ liệu đi đâu.</string>
     <string name="tagline">Không cấm bạn. Chỉ bắt bạn suy nghĩ một lần trước khi làm.</string>
     <string name="onboarding_goal_ex">Chọn mục tiêu của bạn</string>
-    <string name="leave">THÔI, TÔI ĐI RA</string>
-    <string name="continue_anyway">TÔI VẪN MUỐN XEM</string>
+    <string name="leave">Thôi, tôi đi ra</string>
+    <string name="continue_anyway">Tôi vẫn muốn xem</string>
 </resources>

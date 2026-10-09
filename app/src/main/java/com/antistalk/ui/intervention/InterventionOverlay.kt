@@ -42,10 +42,12 @@ import com.antistalk.ui.theme.AccentLavenderLight
 import com.antistalk.ui.theme.AccentTerracotta
 import com.antistalk.ui.theme.AccentTerracottaLight
 import com.antistalk.ui.theme.BrandHotPink
+import com.antistalk.ui.theme.BrandMossGreenLight
 import com.antistalk.ui.theme.BrandViolet
 import com.antistalk.ui.theme.LocalIsDarkTheme
 import com.antistalk.ui.theme.MintGreen
 import com.antistalk.ui.theme.WarmSage
+import com.antistalk.ui.theme.WarmSageDark
 import com.antistalk.ui.theme.WarmSageLight
 import java.util.Locale
 
@@ -101,7 +103,7 @@ fun InterventionOverlay(
                             .height(2.dp)
                             .background(
                                 Brush.horizontalGradient(
-                                    listOf(Color.Transparent, BrandViolet, Color.Transparent)
+                                    listOf(Color.Transparent, BrandMossGreenLight, Color.Transparent)
                                 )
                             )
                     )
@@ -112,7 +114,7 @@ fun InterventionOverlay(
                             .height(4.dp)
                             .background(
                                 Brush.horizontalGradient(
-                                    listOf(WarmSage, AccentTerracotta, AccentLavender)
+                                    listOf(WarmSageDark, WarmSage, AccentTerracotta)
                                 )
                             )
                     )
@@ -144,22 +146,22 @@ fun InterventionOverlay(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
                             .background(
-                                if (isDark) Color(0x338B5CF6) else AccentTerracottaLight
+                                if (isDark) Color(0x336EAA81) else AccentTerracottaLight
                             )
                             .border(
                                 1.dp,
-                                if (isDark) Color(0x4D8B5CF6) else Color(0x4DE8795A),
+                                if (isDark) Color(0x4D6EAA81) else Color(0x4DE8795A),
                                 RoundedCornerShape(10.dp)
                             )
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            if (vi) "🔁 LẦN THỨ ${s.countToday.coerceAtLeast(1)} HÔM NAY · ${s.personName}"
-                            else "🔁 #${s.countToday.coerceAtLeast(1)} TODAY · ${s.personName}",
+                            if (vi) "🔁 Lần thứ ${s.countToday.coerceAtLeast(1)} hôm nay · ${s.personName}"
+                            else "🔁 #${s.countToday.coerceAtLeast(1)} today · ${s.personName}",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = if (isDark) Color(0xFFDDD6FE) else AccentTerracotta
+                            color = if (isDark) Color(0xFFD6EADd) else AccentTerracotta
                         )
                     }
 
@@ -174,7 +176,8 @@ fun InterventionOverlay(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isDark) BrandViolet else WarmSage
+                                containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                                contentColor = Color.White
                             )
                         ) {
                             Text(
@@ -218,7 +221,7 @@ fun InterventionOverlay(
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(999.dp),
                                             colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = if (isDark) BrandViolet else WarmSage,
+                                                selectedContainerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
                                                 selectedLabelColor = Color.White
                                             )
                                         )
@@ -239,7 +242,8 @@ fun InterventionOverlay(
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(14.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isDark) BrandViolet else WarmSage
+                                    containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                                    contentColor = Color.White
                                 )
                             ) {
                                 Text(if (vi) "Đi ra" else "Leave", fontWeight = FontWeight.Bold)

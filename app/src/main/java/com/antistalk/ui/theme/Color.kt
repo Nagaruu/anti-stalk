@@ -4,42 +4,42 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
-// ─── Concept A: Midnight Clarity (dark mode) ─────────────────────────────────
-// Deep violet-pink glassmorphism. Ambient glow palette.
-private val MC_Primary          = Color(0xFF8B5CF6) // Violet
-private val MC_OnPrimary        = Color(0xFFFFFFFF)
-private val MC_PrimaryContainer = Color(0xFF3F2D8E)
-private val MC_OnPrimaryContainer = Color(0xFFDDD6FE)
-private val MC_Secondary        = Color(0xFFEC4899) // Hot pink accent
-private val MC_OnSecondary      = Color(0xFFFFFFFF)
-private val MC_SecondaryContainer = Color(0xFF7E1E4E)
-private val MC_OnSecondaryContainer = Color(0xFFFCE7F3)
-private val MC_Background       = Color(0xFF0D0B14) // Deep space
-private val MC_OnBackground     = Color(0xFFF5F3FF)
-private val MC_Surface          = Color(0xFF1A1628) // Elevated glass
-private val MC_OnSurface        = Color(0xFFF5F3FF)
-private val MC_SurfaceVariant   = Color(0xFF2A2442)
-private val MC_OnSurfaceVariant = Color(0xFFA89FC0)
-private val MC_Outline          = Color(0xFF4A4268)
-private val MC_OutlineVariant   = Color(0xFF2D2950)
-private val MC_Error            = Color(0xFFF87171)
-private val MC_OnError          = Color(0xFF1A0A0A)
+// ─── Dark Mode Palette: Forest Midnight (Moss green / Deep charcoal) ─────────
+// Unified brand green identity in low light
+private val Dark_Primary             = Color(0xFF6EAA81) // Moss green highlight
+private val Dark_OnPrimary           = Color(0xFF0F2417)
+private val Dark_PrimaryContainer    = Color(0xFF24442F)
+private val Dark_OnPrimaryContainer  = Color(0xFFD2EED8)
+private val Dark_Secondary           = Color(0xFFE89A7A) // Terracotta warm accent
+private val Dark_OnSecondary         = Color(0xFFFFFFFF)
+private val Dark_SecondaryContainer   = Color(0xFF5A2A1A)
+private val Dark_OnSecondaryContainer = Color(0xFFFDEEE9)
+private val Dark_Background          = Color(0xFF121613) // Deep charcoal with moss undertone
+private val Dark_OnBackground        = Color(0xFFF0F4F1)
+private val Dark_Surface             = Color(0xFF1A221C) // Deep moss surface
+private val Dark_OnSurface           = Color(0xFFF0F4F1)
+private val Dark_SurfaceVariant      = Color(0xFF253128)
+private val Dark_OnSurfaceVariant    = Color(0xFFA1B3A5)
+private val Dark_Outline             = Color(0xFF435547)
+private val Dark_OutlineVariant      = Color(0xFF29372D)
+private val Dark_Error               = Color(0xFFF87171)
+private val Dark_OnError             = Color(0xFF1A0A0A)
 
-// ─── Concept B: Soft Sanity (light mode) ─────────────────────────────────────
-// Warm earth tones: sage green primary, terracotta accent. Calm & encouraging.
-private val SS_Primary          = Color(0xFF5B8A6A) // Sage green
+// ─── Light Mode Palette: Soft Sanity (Sage green / Warm cream pastel) ────────
+// Warm earth tones: moss/sage green primary, terracotta accent. Calm & encouraging.
+private val SS_Primary          = Color(0xFF4B7B58) // Sage / Moss green
 private val SS_OnPrimary        = Color(0xFFFFFFFF)
-private val SS_PrimaryContainer = Color(0xFFD6EADd) // Soft mint
+private val SS_PrimaryContainer = Color(0xFFD6EADd) // Soft mint pastel
 private val SS_OnPrimaryContainer = Color(0xFF1A3D26)
 private val SS_Secondary        = Color(0xFFE8795A) // Terracotta coral
 private val SS_OnSecondary      = Color(0xFFFFFFFF)
 private val SS_SecondaryContainer = Color(0xFFFDEEE9)
 private val SS_OnSecondaryContainer = Color(0xFF5A1E0A)
-private val SS_Background       = Color(0xFFF7F4F0) // Warm cream
+private val SS_Background       = Color(0xFFF7F4F0) // Warm cream / Be pastel
 private val SS_OnBackground     = Color(0xFF2C2420)
 private val SS_Surface          = Color(0xFFFFFFFF)
 private val SS_OnSurface        = Color(0xFF2C2420)
-private val SS_SurfaceVariant   = Color(0xFFF0EBE5)
+private val SS_SurfaceVariant   = Color(0xFFF0EBE5) // Pastel beige
 private val SS_OnSurfaceVariant = Color(0xFF6B5E56)
 private val SS_Outline          = Color(0xFFD5CEC7)
 private val SS_OutlineVariant   = Color(0xFFE8E0D8)
@@ -48,24 +48,24 @@ private val SS_OnError          = Color(0xFFFFFFFF)
 
 // ─── Exported schemes ─────────────────────────────────────────────────────────
 val DarkColors = darkColorScheme(
-    primary                = MC_Primary,
-    onPrimary              = MC_OnPrimary,
-    primaryContainer       = MC_PrimaryContainer,
-    onPrimaryContainer     = MC_OnPrimaryContainer,
-    secondary              = MC_Secondary,
-    onSecondary            = MC_OnSecondary,
-    secondaryContainer     = MC_SecondaryContainer,
-    onSecondaryContainer   = MC_OnSecondaryContainer,
-    background             = MC_Background,
-    onBackground           = MC_OnBackground,
-    surface                = MC_Surface,
-    onSurface              = MC_OnSurface,
-    surfaceVariant         = MC_SurfaceVariant,
-    onSurfaceVariant       = MC_OnSurfaceVariant,
-    outline                = MC_Outline,
-    outlineVariant         = MC_OutlineVariant,
-    error                  = MC_Error,
-    onError                = MC_OnError,
+    primary                = Dark_Primary,
+    onPrimary              = Dark_OnPrimary,
+    primaryContainer       = Dark_PrimaryContainer,
+    onPrimaryContainer     = Dark_OnPrimaryContainer,
+    secondary              = Dark_Secondary,
+    onSecondary            = Dark_OnSecondary,
+    secondaryContainer     = Dark_SecondaryContainer,
+    onSecondaryContainer   = Dark_OnSecondaryContainer,
+    background             = Dark_Background,
+    onBackground           = Dark_OnBackground,
+    surface                = Dark_Surface,
+    onSurface              = Dark_OnSurface,
+    surfaceVariant         = Dark_SurfaceVariant,
+    onSurfaceVariant       = Dark_OnSurfaceVariant,
+    outline                = Dark_Outline,
+    outlineVariant         = Dark_OutlineVariant,
+    error                  = Dark_Error,
+    onError                = Dark_OnError,
 )
 
 val LightColors = lightColorScheme(
@@ -89,16 +89,23 @@ val LightColors = lightColorScheme(
     onError                = SS_OnError,
 )
 
-// ─── Concept A & B Shared Design Tokens ─────────────────────────────────────────
-val AccentTerracotta    = Color(0xFFE8795A) // Concept B warm coral
-val AccentTerracottaLight = Color(0xFFFDEEE9)
-val AccentLavender      = Color(0xFF7B6FBF) // Concept B introspective purple
-val AccentLavenderLight = Color(0xFFEEEDF9)
-val BrandViolet         = Color(0xFF8B5CF6) // Concept A primary violet
-val BrandHotPink        = Color(0xFFEC4899) // Concept A glowing pink
-val MintGreen           = Color(0xFF34D399) // Concept A positive action green
-val WarmSage            = Color(0xFF5B8A6A) // Concept B sage green
-val WarmSageLight       = Color(0xFFEBF3EE)
+// ─── Brand Design Tokens (Moss Green & Pastel Beige) ──────────────────────────
+val AccentTerracotta        = Color(0xFFE8795A) // Warm coral accent
+val AccentTerracottaLight   = Color(0xFFFDEEE9)
+val AccentLavender          = Color(0xFF6EAA81) // Aligned with brand moss
+val AccentLavenderLight     = Color(0xFFEBF3EE)
+
+// Core brand moss greens
+val WarmSage                = Color(0xFF4B7B58) // Primary brand moss green
+val WarmSageDark            = Color(0xFF386641) // Dark forest moss (Primary button)
+val WarmSageLight           = Color(0xFFEBF3EE) // Pale moss / beige tint
+val BrandMossGreen          = Color(0xFF4B7B58) // Primary moss green
+val BrandMossGreenLight     = Color(0xFF6EAA81) // Highlight moss green for dark mode
+val MintGreen               = Color(0xFF4EAA73) // Positive status green
+
+// Backward-compatibility aliases remapped to Brand Moss Green
+val BrandViolet             = Color(0xFF4B7B58) // Mapped to brand moss green to avoid stray blue/purple
+val BrandHotPink            = Color(0xFFE8795A) // Mapped to warm coral
 
 // Monitored app icon gradients
 val FbGradient          = listOf(Color(0xFF1877F2), Color(0xFF0D65D9))

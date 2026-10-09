@@ -41,10 +41,12 @@ import androidx.compose.ui.unit.sp
 import com.antistalk.ui.theme.AccentTerracotta
 import com.antistalk.ui.theme.AccentTerracottaLight
 import com.antistalk.ui.theme.BrandHotPink
+import com.antistalk.ui.theme.BrandMossGreenLight
 import com.antistalk.ui.theme.BrandViolet
 import com.antistalk.ui.theme.LocalIsDarkTheme
 import com.antistalk.ui.theme.MintGreen
 import com.antistalk.ui.theme.WarmSage
+import com.antistalk.ui.theme.WarmSageDark
 import com.antistalk.ui.theme.WarmSageLight
 
 @Composable
@@ -79,8 +81,8 @@ fun OnboardingScreen(onDone: (goal: String) -> Unit) {
                 .clip(CircleShape)
                 .background(
                     Brush.linearGradient(
-                        if (isDark) listOf(BrandViolet, BrandHotPink)
-                        else listOf(WarmSage, AccentTerracotta)
+                        if (isDark) listOf(BrandMossGreenLight, MintGreen)
+                        else listOf(WarmSageDark, WarmSage)
                     )
                 ),
             contentAlignment = Alignment.Center
@@ -148,7 +150,7 @@ fun OnboardingScreen(onDone: (goal: String) -> Unit) {
                         val isSelected = goal == g
                         val borderColor by animateColorAsState(
                             targetValue = if (isSelected) {
-                                if (isDark) BrandViolet else WarmSage
+                                if (isDark) BrandMossGreenLight else WarmSageDark
                             } else {
                                 if (isDark) cs.outlineVariant else cs.outline
                             },
@@ -156,7 +158,7 @@ fun OnboardingScreen(onDone: (goal: String) -> Unit) {
                         )
                         val bgColor by animateColorAsState(
                             targetValue = if (isSelected) {
-                                if (isDark) Color(0x338B5CF6) else WarmSageLight
+                                if (isDark) Color(0x336EAA81) else WarmSageLight
                             } else {
                                 if (isDark) cs.surfaceVariant else cs.surface
                             },
@@ -181,12 +183,12 @@ fun OnboardingScreen(onDone: (goal: String) -> Unit) {
                                     g,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     color = if (isSelected) {
-                                        if (isDark) BrandHotPink else WarmSage
+                                        if (isDark) Color(0xFFD6EADd) else Color(0xFF1E3A28)
                                     } else cs.onSurface
                                 )
                             }
                             if (isSelected) {
-                                Text("✓", fontWeight = FontWeight.Bold, color = if (isDark) BrandViolet else WarmSage)
+                                Text("✓", fontWeight = FontWeight.Bold, color = if (isDark) BrandMossGreenLight else WarmSageDark)
                             }
                         }
                     }
@@ -240,7 +242,8 @@ fun OnboardingScreen(onDone: (goal: String) -> Unit) {
                 .height(52.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDark) BrandViolet else WarmSage
+                containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                contentColor = Color.White
             )
         ) {
             Text(

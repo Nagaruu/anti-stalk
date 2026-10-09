@@ -49,10 +49,12 @@ import com.antistalk.detection.OverlayManager
 import com.antistalk.detection.StalkAccessibilityService
 import com.antistalk.ui.theme.AccentTerracotta
 import com.antistalk.ui.theme.BrandHotPink
+import com.antistalk.ui.theme.BrandMossGreenLight
 import com.antistalk.ui.theme.BrandViolet
 import com.antistalk.ui.theme.LocalIsDarkTheme
 import com.antistalk.ui.theme.MintGreen
 import com.antistalk.ui.theme.WarmSage
+import com.antistalk.ui.theme.WarmSageDark
 import com.antistalk.ui.theme.WarmSageLight
 
 @Composable
@@ -190,7 +192,8 @@ fun PermissionsScreen(onDone: () -> Unit) {
             enabled = allGranted,
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDark) BrandViolet else WarmSage
+                containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                contentColor = Color.White
             )
         ) {
             Text(
@@ -282,7 +285,7 @@ private fun PermissionCard(
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
                     Text(
-                        if (isGranted) "✅ ĐÃ BẬT" else "❌ CHƯA BẬT",
+                        if (isGranted) "✅ Đã bật" else "❌ Chưa bật",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (isGranted) (if (isDark) MintGreen else WarmSage) else cs.error
@@ -303,7 +306,8 @@ private fun PermissionCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDark) BrandViolet else WarmSage
+                        containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                        contentColor = Color.White
                     )
                 ) {
                     Text(buttonLabel, fontWeight = FontWeight.SemiBold, color = Color.White)

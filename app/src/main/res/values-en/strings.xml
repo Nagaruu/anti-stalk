@@ -4,6 +4,6 @@
     <string name="accessibility_description">Anti-Stalk watches names you type or screen titles in the social apps you selected (Facebook, Messenger, Instagram, Zalo) to catch the moment you are about to stalk someone on your avoid list. Everything is processed on-device.</string>
     <string name="tagline">Not blocking you. Just making you think once before you do it.</string>
     <string name="onboarding_goal_ex">Pick your goal</string>
-    <string name="leave">NAH, I\'M OUT</string>
-    <string name="continue_anyway">I STILL WANT TO SEE</string>
+    <string name="leave">Nah, I\'m out</string>
+    <string name="continue_anyway">I still want to see</string>
 </resources>

@@ -74,6 +74,7 @@ import com.antistalk.ui.theme.AccentLavenderLight
 import com.antistalk.ui.theme.AccentTerracotta
 import com.antistalk.ui.theme.AccentTerracottaLight
 import com.antistalk.ui.theme.BrandHotPink
+import com.antistalk.ui.theme.BrandMossGreenLight
 import com.antistalk.ui.theme.BrandViolet
 import com.antistalk.ui.theme.DefaultAppGradient
 import com.antistalk.ui.theme.FbGradient
@@ -82,6 +83,7 @@ import com.antistalk.ui.theme.LocalIsDarkTheme
 import com.antistalk.ui.theme.MintGreen
 import com.antistalk.ui.theme.MsGradient
 import com.antistalk.ui.theme.WarmSage
+import com.antistalk.ui.theme.WarmSageDark
 import com.antistalk.ui.theme.WarmSageLight
 import com.antistalk.ui.theme.ZaloGradient
 import java.text.SimpleDateFormat
@@ -751,7 +753,7 @@ fun StatsScreen(vm: MainViewModel) {
         // ─── Header: Analytics ────────────────────────────────────────────────
         item {
             Text(
-                "THỐNG KÊ & PHÂN TÍCH",
+                "Thống kê & phân tích",
                 style = MaterialTheme.typography.labelSmall,
                 color = cs.onSurfaceVariant,
                 letterSpacing = 1.sp,
@@ -813,11 +815,11 @@ fun StatsScreen(vm: MainViewModel) {
         // ─── 3 Progress Summary Metric Cards with Mini Sparklines ─────────────
         item {
             AnalyticsMetricCard(
-                title = "Điểm kỷ luật (Discipline Score)",
-                titleColor = if (isDark) BrandViolet else Color(0xFF7C3AED),
+                title = "Điểm kỷ luật",
+                titleColor = if (isDark) BrandMossGreenLight else WarmSageDark,
                 value = "$disciplineRate.0%",
                 subtitle = "Tỷ lệ bạn kiểm soát và dừng lại thành công",
-                sparklineColor = Color(0xFF8B5CF6),
+                sparklineColor = if (isDark) BrandMossGreenLight else WarmSage,
                 curveType = 0,
                 isDark = isDark
             )
@@ -825,7 +827,7 @@ fun StatsScreen(vm: MainViewModel) {
 
         item {
             AnalyticsMetricCard(
-                title = "Tỉ lệ dừng stalk (Success Rate)",
+                title = "Tỉ lệ dừng stalk",
                 titleColor = if (isDark) BrandHotPink else AccentTerracotta,
                 value = "$successRate.0%",
                 subtitle = "Tỷ lệ chọn quay đầu sau khi hiện cảnh báo",
@@ -837,7 +839,7 @@ fun StatsScreen(vm: MainViewModel) {
 
         item {
             AnalyticsMetricCard(
-                title = "Tổng lượt can thiệp (Interventions)",
+                title = "Tổng lượt can thiệp",
                 titleColor = Color(0xFFF59E0B),
                 value = "$intervenedCount lần",
                 subtitle = "Số lần hệ thống can thiệp và yêu cầu xác nhận",
@@ -869,7 +871,7 @@ fun StatsScreen(vm: MainViewModel) {
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    "CHI TIẾT & LỊCH SỬ SỰ KIỆN",
+                    "Chi tiết & lịch sử sự kiện",
                     style = MaterialTheme.typography.labelSmall,
                     color = cs.onSurfaceVariant,
                     letterSpacing = 1.sp,
@@ -972,7 +974,7 @@ fun StatsScreen(vm: MainViewModel) {
                             label = { Text("Tất cả (${periodEvents.size})") },
                             shape = RoundedCornerShape(999.dp),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = if (isDark) BrandViolet else cs.primary,
+                                selectedContainerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
                                 selectedLabelColor = Color.White
                             )
                         )
@@ -987,7 +989,7 @@ fun StatsScreen(vm: MainViewModel) {
                             label = { Text("👤 $pName ($count)") },
                             shape = RoundedCornerShape(999.dp),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = if (isDark) BrandViolet else cs.primary,
+                                selectedContainerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
                                 selectedLabelColor = Color.White
                             )
                         )
@@ -1051,7 +1053,7 @@ fun SettingsScreen(vm: MainViewModel) {
     ) {
         Column {
             Text(
-                "TÙY CHỈNH ỨNG DỤNG",
+                "Tùy chỉnh ứng dụng",
                 style = MaterialTheme.typography.labelSmall,
                 color = cs.onSurfaceVariant,
                 letterSpacing = 1.sp,
@@ -1074,7 +1076,7 @@ fun SettingsScreen(vm: MainViewModel) {
         ) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(
-                    "GIAO DIỆN",
+                    "Giao diện",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = cs.onSurfaceVariant,
@@ -1087,21 +1089,21 @@ fun SettingsScreen(vm: MainViewModel) {
                 ) {
                     ThemePreviewItem(
                         mode = "light",
-                        label = "Light",
+                        label = "Sáng",
                         isSelected = themeMode == "light",
                         onClick = { vm.setThemeMode("light") },
                         modifier = Modifier.weight(1f)
                     )
                     ThemePreviewItem(
                         mode = "dark",
-                        label = "Dark",
+                        label = "Tối",
                         isSelected = themeMode == "dark",
                         onClick = { vm.setThemeMode("dark") },
                         modifier = Modifier.weight(1f)
                     )
                     ThemePreviewItem(
                         mode = "system",
-                        label = "System",
+                        label = "Hệ thống",
                         isSelected = themeMode == "system",
                         onClick = { vm.setThemeMode("system") },
                         modifier = Modifier.weight(1f)
@@ -1167,7 +1169,7 @@ fun SettingsScreen(vm: MainViewModel) {
                         val isSelected = level == lv
                         val itemBorder by animateColorAsState(
                             targetValue = if (isSelected) {
-                                if (isDark) BrandViolet else WarmSage
+                                if (isDark) BrandMossGreenLight else WarmSageDark
                             } else {
                                 if (isDark) cs.outlineVariant else cs.outline
                             },
@@ -1175,7 +1177,7 @@ fun SettingsScreen(vm: MainViewModel) {
                         )
                         val itemBg by animateColorAsState(
                             targetValue = if (isSelected) {
-                                if (isDark) Color(0x2E8B5CF6) else WarmSageLight
+                                if (isDark) Color(0x336EAA81) else WarmSageLight
                             } else {
                                 if (isDark) cs.surfaceVariant else cs.surface
                             },
@@ -1202,7 +1204,7 @@ fun SettingsScreen(vm: MainViewModel) {
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                                     fontSize = 14.sp,
                                     color = if (isSelected) {
-                                        if (isDark) Color(0xFFDDD6FE) else Color(0xFF1E3A28)
+                                        if (isDark) Color(0xFFD6EADd) else Color(0xFF1E3A28)
                                     } else cs.onSurface
                                 )
                                 Spacer(Modifier.height(2.dp))
@@ -1219,7 +1221,7 @@ fun SettingsScreen(vm: MainViewModel) {
                                 selected = isSelected,
                                 onClick = null,
                                 colors = RadioButtonDefaults.colors(
-                                    selectedColor = if (isDark) BrandViolet else WarmSage,
+                                    selectedColor = if (isDark) BrandMossGreenLight else WarmSageDark,
                                     unselectedColor = if (isDark) cs.outlineVariant else cs.outline
                                 )
                             )
@@ -1231,7 +1233,7 @@ fun SettingsScreen(vm: MainViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(if (isDark) Color(0x1F8B5CF6) else WarmSageLight)
+                        .background(if (isDark) Color(0x246EAA81) else WarmSageLight)
                         .padding(12.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1241,7 +1243,7 @@ fun SettingsScreen(vm: MainViewModel) {
                             "Mức L$level đang kích hoạt. Sẽ áp dụng ngay lập tức cho lần can thiệp tiếp theo mà không cần khởi động lại app.",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
-                            color = if (isDark) BrandHotPink else WarmSage
+                            color = if (isDark) MintGreen else WarmSageDark
                         )
                     }
                 }
@@ -1289,7 +1291,7 @@ fun SettingsScreen(vm: MainViewModel) {
                         onCheckedChange = { vm.setUpdateWifiOnly(it) },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
-                            checkedTrackColor = if (isDark) BrandViolet else WarmSage
+                            checkedTrackColor = if (isDark) BrandMossGreenLight else WarmSageDark
                         )
                     )
                 }
@@ -1304,17 +1306,25 @@ fun SettingsScreen(vm: MainViewModel) {
                         Button(
                             onClick = { vm.showMigrationAgain() },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                                contentColor = Color.White
+                            )
                         ) {
-                            Text("Xem hướng dẫn chuyển đổi bản ${s.info.tag}")
+                            Text("Xem hướng dẫn chuyển đổi bản ${s.info.tag}", fontWeight = FontWeight.SemiBold)
                         }
                     is MainViewModel.UpdateState.ReadyToInstall ->
                         Button(
                             onClick = { vm.openDownloadedInstaller(ctx) },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                                contentColor = Color.White
+                            )
                         ) {
-                            Text("Cài đặt bản ${s.info.tag}")
+                            Text("Cài đặt bản ${s.info.tag}", fontWeight = FontWeight.SemiBold)
                         }
                     else -> Unit
                 }
@@ -1323,9 +1333,16 @@ fun SettingsScreen(vm: MainViewModel) {
                     onClick = { vm.checkUpdate(ctx, force = true) },
                     enabled = !checking,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(
+                        1.5.dp,
+                        if (isDark) BrandMossGreenLight.copy(alpha = 0.7f) else WarmSage.copy(alpha = 0.8f)
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = if (isDark) BrandMossGreenLight else WarmSageDark
+                    )
                 ) {
-                    Text(if (checking) "Đang kiểm tra…" else "Kiểm tra cập nhật")
+                    Text(if (checking) "Đang kiểm tra…" else "Kiểm tra cập nhật", fontWeight = FontWeight.SemiBold)
                 }
 
                 if (checkFailed) {
@@ -1531,7 +1548,7 @@ fun SettingsScreen(vm: MainViewModel) {
             )
         ) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Chẩn đoán phát hiện (Debug Log)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Chẩn đoán phát hiện (Nhật ký)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
                     "Từ khóa: ${if (kwsPreview.isEmpty()) "— chưa có —" else kwsPreview.joinToString(", ")}",
                     style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant

@@ -23,9 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.antistalk.ui.MainViewModel
-import com.antistalk.ui.theme.BrandViolet
+import com.antistalk.ui.theme.BrandMossGreenLight
 import com.antistalk.ui.theme.LocalIsDarkTheme
 import com.antistalk.ui.theme.WarmSage
+import com.antistalk.ui.theme.WarmSageDark
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -75,7 +76,7 @@ fun BackupSection(vm: MainViewModel, modifier: Modifier = Modifier, showRestore:
                 .height(48.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDark) BrandViolet else WarmSage,
+                containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
                 contentColor = Color.White
             )
         ) {
@@ -91,11 +92,11 @@ fun BackupSection(vm: MainViewModel, modifier: Modifier = Modifier, showRestore:
                     .height(46.dp),
                 shape = RoundedCornerShape(14.dp),
                 border = BorderStroke(
-                    1.dp,
-                    if (isDark) BrandViolet.copy(alpha = 0.5f) else WarmSage.copy(alpha = 0.5f)
+                    1.5.dp,
+                    if (isDark) BrandMossGreenLight.copy(alpha = 0.7f) else WarmSage.copy(alpha = 0.8f)
                 ),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (isDark) Color(0xFFEDE9FE) else WarmSage
+                    contentColor = if (isDark) BrandMossGreenLight else WarmSageDark
                 )
             ) {
                 Text("Khôi phục từ file JSON", fontSize = 14.sp, fontWeight = FontWeight.Medium)

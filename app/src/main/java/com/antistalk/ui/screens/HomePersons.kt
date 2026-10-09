@@ -84,6 +84,7 @@ import com.antistalk.ui.theme.AccentLavenderLight
 import com.antistalk.ui.theme.AccentTerracotta
 import com.antistalk.ui.theme.AccentTerracottaLight
 import com.antistalk.ui.theme.BrandHotPink
+import com.antistalk.ui.theme.BrandMossGreenLight
 import com.antistalk.ui.theme.BrandViolet
 import com.antistalk.ui.theme.DefaultAppGradient
 import com.antistalk.ui.theme.FbGradient
@@ -92,6 +93,7 @@ import com.antistalk.ui.theme.LocalIsDarkTheme
 import com.antistalk.ui.theme.MintGreen
 import com.antistalk.ui.theme.MsGradient
 import com.antistalk.ui.theme.WarmSage
+import com.antistalk.ui.theme.WarmSageDark
 import com.antistalk.ui.theme.WarmSageLight
 import com.antistalk.ui.theme.ZaloGradient
 
@@ -375,7 +377,7 @@ fun HomeScreen(vm: MainViewModel) {
         // ─── Detection Status Card ────────────────────────────────────────────
         item {
             Text(
-                "HỆ THỐNG PHÁT HIỆN",
+                "Hệ thống phát hiện",
                 style = MaterialTheme.typography.labelSmall,
                 color = cs.onSurfaceVariant,
                 letterSpacing = 1.sp,
@@ -400,8 +402,8 @@ fun HomeScreen(vm: MainViewModel) {
                         icon = "🔍",
                         title = "Đọc màn hình",
                         isActive = diag.serviceEnabled,
-                        activeLabel = "BẬT",
-                        inactiveLabel = "TẮT",
+                        activeLabel = "Bật",
+                        inactiveLabel = "Tắt",
                         isDark = isDark
                     )
 
@@ -410,8 +412,8 @@ fun HomeScreen(vm: MainViewModel) {
                         icon = "🖼️",
                         title = "Vẽ trên app khác",
                         isActive = diag.canOverlay,
-                        activeLabel = "CẤP",
-                        inactiveLabel = "CHƯA",
+                        activeLabel = "Đã cấp",
+                        inactiveLabel = "Chưa cấp",
                         isDark = isDark
                     )
 
@@ -473,7 +475,8 @@ fun HomeScreen(vm: MainViewModel) {
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isDark) BrandViolet else WarmSage
+                                containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                                contentColor = Color.White
                             )
                         ) {
                             Text("🎯 Test màn cà khịa", fontWeight = FontWeight.SemiBold)
@@ -493,7 +496,7 @@ fun HomeScreen(vm: MainViewModel) {
         // ─── Monitored Apps Section ───────────────────────────────────────────
         item {
             Text(
-                "APP ĐANG THEO DÕI",
+                "Ứng dụng đang theo dõi",
                 style = MaterialTheme.typography.labelSmall,
                 color = cs.onSurfaceVariant,
                 letterSpacing = 1.sp,
@@ -560,7 +563,7 @@ fun HomeScreen(vm: MainViewModel) {
                                 onCheckedChange = { vm.toggleApp(app.packageName, app.label, it) },
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = Color.White,
-                                    checkedTrackColor = if (isDark) BrandViolet else WarmSage
+                                    checkedTrackColor = if (isDark) BrandMossGreenLight else WarmSageDark
                                 )
                             )
                         }
@@ -874,8 +877,9 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                         .height(50.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDark) BrandViolet else WarmSage,
-                        disabledContainerColor = cs.surfaceVariant
+                        containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                        disabledContainerColor = cs.surfaceVariant,
+                        contentColor = Color.White
                     )
                 ) {
                     Text(
@@ -944,7 +948,7 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddSheet = true },
-                containerColor = if (isDark) BrandViolet else WarmSage,
+                containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -964,7 +968,7 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                     Text(
-                        "DANH SÁCH CHẶN / NÉ",
+                        "Danh sách chặn / né",
                         style = MaterialTheme.typography.labelSmall,
                         color = cs.onSurfaceVariant,
                         letterSpacing = 1.2.sp,
@@ -1085,9 +1089,12 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                             Button(
                                 onClick = { showAddSheet = true },
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = if (isDark) BrandViolet else WarmSage)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
+                                    contentColor = Color.White
+                                )
                             ) {
-                                Text("+ Thêm người cần né", color = Color.White)
+                                Text("+ Thêm người cần né", color = Color.White, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
