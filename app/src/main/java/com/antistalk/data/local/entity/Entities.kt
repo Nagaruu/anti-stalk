@@ -60,6 +60,10 @@ data class StalkEvent(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+/**
+ * Reserved for future target-streak milestones (e.g. 7-day or 30-day no-stalk challenge).
+ * Kept in Room DB v1 schema for backward compatibility.
+ */
 @Entity(tableName = "streak_goals")
 data class StreakGoal(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

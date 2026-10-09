@@ -22,12 +22,16 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,7 +53,7 @@ import com.antistalk.ui.screens.StatsScreen
 fun AppNav(vm: MainViewModel) {
     val nav = rememberNavController()
     val onboarded by vm.onboardingDone.collectAsState()
-    var goal by remember { mutableStateOf("Người yêu cũ") }
+    var goal by rememberSaveable { mutableStateOf(vm.userGoal) }
     val start = if (!onboarded) "onboarding" else "main"
 
     // startDestination is only read once per NavHost, so a wipe (which clears
@@ -66,7 +70,11 @@ fun AppNav(vm: MainViewModel) {
 
     NavHost(navController = nav, startDestination = start) {
         composable("onboarding") {
-            OnboardingScreen(onDone = { g -> goal = g; nav.navigate("permissions") })
+            OnboardingScreen(onDone = { g ->
+                goal = g
+                vm.userGoal = g
+                nav.navigate("permissions")
+            })
         }
         composable("permissions") {
             PermissionsScreen(onDone = { vm.setOnboardingDone(); nav.navigate("main") { popUpTo(0) } })
@@ -77,7 +85,7 @@ fun AppNav(vm: MainViewModel) {
 
 @Composable
 private fun MainTabs(vm: MainViewModel, goal: String) {
-    var tab by remember { mutableStateOf(0) }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
     val ctx = LocalContext.current
     val update by vm.updateAvailable.collectAsState()
     val updState by vm.updateState.collectAsState()
@@ -216,11 +224,17 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
         }
     ) { pad ->
         androidx.compose.foundation.layout.Box(modifier = Modifier.padding(pad)) {
-            when (tab) {
-                0 -> HomeScreen(vm)
-                1 -> PersonsScreen(vm, goal)
-                2 -> StatsScreen(vm)
-                else -> SettingsScreen(vm)
+            Crossfade(
+                targetState = tab,
+                animationSpec = tween(220),
+                label = "tab_crossfade"
+            ) { targetTab ->
+                when (targetTab) {
+                    0 -> HomeScreen(vm)
+                    1 -> PersonsScreen(vm, goal)
+                    2 -> StatsScreen(vm)
+                    else -> SettingsScreen(vm)
+                }
             }
         }
     }

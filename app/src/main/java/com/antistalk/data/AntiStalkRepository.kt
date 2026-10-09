@@ -41,6 +41,9 @@ class AntiStalkRepository(ctx: Context) {
     var themeMode: String
         get() = prefs.getString("theme_mode", "system") ?: "system"
         set(v) { prefs.edit().putString("theme_mode", v).apply() }
+    var userGoal: String
+        get() = prefs.getString("user_goal", "Người yêu cũ") ?: "Người yêu cũ"
+        set(v) { prefs.edit().putString("user_goal", v).apply() }
 
     suspend fun seedIfNeeded() {
         // Insert-only-when-empty would strand existing installs forever: a new
@@ -100,6 +103,7 @@ class AntiStalkRepository(ctx: Context) {
     suspend fun personsOnce() = db.personDao().getPersonsOnce()
     suspend fun enabledPackagesOnce(): Set<String> =
         db.appDao().getEnabledOnce().map { it.packageName }.toSet()
+    suspend fun appCountOnce(): Int = db.appDao().count()
 
     suspend fun logEvent(personName: String, personId: Long?, pkg: String, trigger: String, confidence: String): Long =
         db.eventDao().insert(StalkEvent(personName = personName, personId = personId, packageName = pkg, triggerType = trigger, confidence = confidence, decision = "DISMISSED"))
@@ -262,5 +266,12 @@ class AntiStalkRepository(ctx: Context) {
         private const val BACKUP_VERSION = 1
     }
 
-    data class TodayStats(val total: Int, val stopped: Int, val continued: Int, val topName: String, val topCount: Int)
+    data class TodayStats(
+        val total: Int,
+        val stopped: Int,
+        val continued: Int,
+        val topName: String,
+        val topCount: Int,
+        val dismissed: Int = (total - stopped - continued).coerceAtLeast(0)
+    )
 }

@@ -77,8 +77,9 @@ class StalkAccessibilityService : AccessibilityService() {
     private suspend fun refreshCacheNow() {
         try {
             repo.seedIfNeeded()
+            val allAppsCount = repo.appCountOnce()
             val loadedPkgs = repo.enabledPackagesOnce()
-            enabledPkgs = if (loadedPkgs.isEmpty()) {
+            enabledPkgs = if (loadedPkgs.isEmpty() && allAppsCount == 0) {
                 MonitoredPackages.DEFAULTS.filter { it.defaultEnabled }.map { it.packageName }.toSet()
             } else {
                 loadedPkgs
@@ -102,6 +103,7 @@ class StalkAccessibilityService : AccessibilityService() {
         if (System.currentTimeMillis() < suppressUntil) return
         val pkg = event.packageName?.toString() ?: return
         if (!MonitoredPackages.isMonitored(pkg)) return
+        if (pkg !in enabledPkgs) return
 
         // Snapshot synchronously: the framework may recycle the event
         // after this callback returns, so never touch it from a coroutine.

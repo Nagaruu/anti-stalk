@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -685,6 +686,44 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
     var name by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var extra by remember { mutableStateOf("") }
+    var personToDelete by remember { mutableStateOf<com.antistalk.data.local.entity.AvoidedPerson?>(null) }
+
+    if (personToDelete != null) {
+        val target = personToDelete!!
+        AlertDialog(
+            onDismissRequest = { personToDelete = null },
+            title = {
+                Text(
+                    "Xóa khỏi danh sách né?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    "Bạn có chắc muốn xóa \"${target.displayName}\"? Toàn bộ từ khóa liên quan sẽ bị xóa và Anti-Stalk sẽ không còn cảnh báo cho người này.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = cs.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        vm.deletePerson(target.id)
+                        personToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = cs.error)
+                ) {
+                    Text("Xóa", color = androidx.compose.ui.graphics.Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { personToDelete = null }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp),
@@ -874,7 +913,7 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                     }
 
                     TextButton(
-                        onClick = { vm.deletePerson(p.id) },
+                        onClick = { personToDelete = p },
                         colors = ButtonDefaults.textButtonColors(contentColor = cs.error)
                     ) {
                         Text("Xóa")

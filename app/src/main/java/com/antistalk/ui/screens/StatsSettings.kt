@@ -153,8 +153,15 @@ fun StatsScreen(vm: MainViewModel) {
                         lineHeight = 48.sp
                     )
                     Spacer(Modifier.height(4.dp))
+                    val dismissed = stats.dismissed
+                    val detailText = buildString {
+                        append("${stats.total} lần kích hoạt · ${stats.stopped} dừng được · ${stats.continued} vẫn xem")
+                        if (dismissed > 0) {
+                            append(" · $dismissed chưa chọn")
+                        }
+                    }
                     Text(
-                        "${stats.total} lần muốn stalk · ${stats.stopped} lần dừng được · ${stats.continued} lần vẫn xem",
+                        detailText,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xF2FFFFFF)
                     )

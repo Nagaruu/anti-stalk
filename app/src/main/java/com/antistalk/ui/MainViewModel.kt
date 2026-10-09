@@ -128,6 +128,10 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
         onboardingDone.value = true
     }
 
+    var userGoal: String
+        get() = repo.userGoal
+        set(value) { repo.userGoal = value }
+
     fun setRoastLevel(l: Int) {
         repo.roastLevel = l
         roastLevel.value = l
