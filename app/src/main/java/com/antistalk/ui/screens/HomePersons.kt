@@ -36,7 +36,6 @@ import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircleOutline
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.Visibility
@@ -51,7 +50,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
@@ -486,7 +484,7 @@ fun HomeScreen(vm: MainViewModel) {
                     ) {
                         Button(
                             onClick = { vm.testOverlay(ctx) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isDark) BrandMossGreenLight else WarmSageDark,
@@ -499,20 +497,7 @@ fun HomeScreen(vm: MainViewModel) {
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Test màn cà khịa", fontWeight = FontWeight.SemiBold)
-                        }
-
-                        OutlinedButton(
-                            onClick = { tick++; vm.refreshStats() },
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Refresh,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text("Kiểm tra lại")
+                            Text("Test màn cà khịa", fontWeight = FontWeight.SemiBold, maxLines = 1)
                         }
                     }
                 }

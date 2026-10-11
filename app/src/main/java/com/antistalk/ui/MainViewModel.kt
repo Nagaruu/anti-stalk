@@ -223,23 +223,6 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
         Toast.makeText(ctx, "Đã bung overlay test — mở Facebook để thấy nó nổi lên", Toast.LENGTH_LONG).show()
     }
 
-    fun wipeAll() {
-        viewModelScope.launch {
-            repo.wipeAll()
-            StalkAccessibilityService.invalidateCache()
-            // repo.wipeAll() clears the prefs file, so every mirrored StateFlow
-            // must fall back to its default too — otherwise the chips keep
-            // showing the pre-wipe values while the prefs already say "light"/true.
-            roastLevel.value = 2
-            themeMode.value = "light"
-            updateWifiOnly.value = true
-            onboardingDone.value = false
-            disclosureAccepted.value = false
-            detectionStatus.value = DetectionStatus()
-            refreshStats()
-        }
-    }
-
     fun suggestedKeywords(name: String): List<String> = suggestKeywords(name)
 
     /** Kick off the APK download for [info]; completion lands in armReady. */

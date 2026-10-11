@@ -50,8 +50,8 @@ nào. Không SDK theo dõi.
 ## 7. Quyền của bạn
 
 Tắt Trợ năng hoặc thu hồi quyền overlay bất cứ lúc nào trong Cài đặt Android
-là app ngừng quan sát ngay. Nút “Xóa toàn bộ dữ liệu local” trong app xóa sạch
-danh sách né và lịch sử.
+là app ngừng quan sát ngay. Muốn xóa người nào thì xóa trong tab Né ai;
+gỡ app là hết dữ liệu.
 
 ## 8. Liên hệ
 

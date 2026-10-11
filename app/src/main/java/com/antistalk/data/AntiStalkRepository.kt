@@ -144,15 +144,6 @@ class AntiStalkRepository(ctx: Context) {
         return db.eventDao().countForPersonSince(name, start)
     }
 
-    suspend fun wipeAll() {
-        db.eventDao().deleteAll()
-        db.keywordDao().deleteAll()
-        db.personDao().deleteAllPersons()
-        db.goalDao().deleteAll()
-        prefs.edit().clear().apply()
-        seedIfNeeded()
-    }
-
     data class ImportSummary(val persons: Int, val keywords: Int, val apps: Int, val skippedPersons: Int = 0)
 
     /**

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -350,7 +351,8 @@ fun BreakdownDetailCard(
                         Text(
                             "Lần muốn stalk",
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = cs.onSurfaceVariant
+                            color = cs.onSurfaceVariant,
+                            modifier = Modifier.heightIn(min = 30.dp)
                         )
                     }
                 }
@@ -389,7 +391,8 @@ fun BreakdownDetailCard(
                         Text(
                             "Lần hiện cảnh báo",
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = cs.onSurfaceVariant
+                            color = cs.onSurfaceVariant,
+                            modifier = Modifier.heightIn(min = 30.dp)
                         )
                     }
                 }
@@ -428,7 +431,8 @@ fun BreakdownDetailCard(
                         Text(
                             "Dừng được ($disciplineRate%)",
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = mintColor
+                            color = mintColor,
+                            modifier = Modifier.heightIn(min = 30.dp)
                         )
                     }
                 }
@@ -1373,37 +1377,6 @@ fun SettingsScreen(vm: MainViewModel) {
                     Text("Xem chính sách riêng tư")
                 }
             }
-        }
-
-        // ─── Danger Zone: Wipe Data ───────────────────────────────────────────
-        var showWipeConfirm by remember { mutableStateOf(false) }
-        if (showWipeConfirm) {
-            AlertDialog(
-                onDismissRequest = { showWipeConfirm = false },
-                title = { Text("Xác nhận xóa dữ liệu?") },
-                text = { Text("Tất cả người cần né, từ khóa, nhật ký và thống kê stalk sẽ bị xóa hoàn toàn khỏi máy. Bạn có chắc không?") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showWipeConfirm = false
-                            vm.wipeAll()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = cs.error)
-                    ) { Text("Xóa hết") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showWipeConfirm = false }) { Text("Hủy") }
-                }
-            )
-        }
-
-        OutlinedButton(
-            onClick = { showWipeConfirm = true },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = cs.error)
-        ) {
-            Text("Xóa toàn bộ dữ liệu máy")
         }
 
         Spacer(Modifier.height(30.dp))
