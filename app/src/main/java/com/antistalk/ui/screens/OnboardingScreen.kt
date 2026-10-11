@@ -20,7 +20,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -196,7 +198,12 @@ fun OnboardingScreen(onDone: (goal: String) -> Unit) {
                                 )
                             }
                             if (isSelected) {
-                                Text("✓", fontWeight = FontWeight.Bold, color = if (isDark) BrandMossGreenLight else WarmSageDark)
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = if (isDark) BrandMossGreenLight else WarmSageDark
+                                )
                             }
                         }
                     }
@@ -220,7 +227,12 @@ fun OnboardingScreen(onDone: (goal: String) -> Unit) {
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                Text("🔒", fontSize = 22.sp)
+                Icon(
+                    Icons.Outlined.Lock,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = if (isDark) MintGreen else WarmSage
+                )
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(

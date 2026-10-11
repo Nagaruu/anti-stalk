@@ -27,6 +27,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,6 +40,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -318,12 +325,21 @@ fun BreakdownDetailCard(
                         .padding(10.dp)
                 ) {
                     Column {
-                        Text(
-                            "🎯 1. Ý định",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = cs.onSurfaceVariant,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.Psychology,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = cs.onSurfaceVariant
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "1. Ý định",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = cs.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "$totalCount",
@@ -348,12 +364,21 @@ fun BreakdownDetailCard(
                         .padding(10.dp)
                 ) {
                     Column {
-                        Text(
-                            "🛡️ 2. Can thiệp",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = cs.onSurfaceVariant,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.Shield,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = cs.onSurfaceVariant
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "2. Can thiệp",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = cs.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "$intervenedCount",
@@ -378,12 +403,21 @@ fun BreakdownDetailCard(
                         .padding(10.dp)
                 ) {
                     Column {
-                        Text(
-                            "🛑 3. Kết quả",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = mintColor,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = mintColor
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "3. Kết quả",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = mintColor,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "$stoppedCount",
@@ -932,7 +966,20 @@ fun StatsScreen(vm: MainViewModel) {
                         modifier = Modifier.padding(18.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("🌟", fontSize = 32.sp)
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(CircleShape)
+                                .background(cs.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(26.dp),
+                                tint = cs.onSurfaceVariant
+                            )
+                        }
                         Spacer(Modifier.width(14.dp))
                         Text(
                             "Không có ghi nhận nào trong khoảng thời gian này. Sạch sẽ tuyệt đối! 😌",
@@ -1328,22 +1375,6 @@ fun SettingsScreen(vm: MainViewModel) {
             }
         }
 
-        // ─── Backup / restore ─────────────────────────────────────────────────
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = cs.surface),
-            elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp),
-            border = androidx.compose.foundation.BorderStroke(
-                1.dp,
-                if (isDark) cs.outlineVariant else cs.outline
-            )
-        ) {
-            Column(modifier = Modifier.padding(18.dp)) {
-                BackupSection(vm)
-            }
-        }
-
         // ─── Danger Zone: Wipe Data ───────────────────────────────────────────
         var showWipeConfirm by remember { mutableStateOf(false) }
         if (showWipeConfirm) {
@@ -1444,7 +1475,12 @@ private fun ThemePreviewItem(
                                         .background(Color(0xFF1C1C1E)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("✓", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp),
+                                        tint = Color.White
+                                    )
                                 }
                             }
                         }
@@ -1481,7 +1517,12 @@ private fun ThemePreviewItem(
                                         .background(Color(0xFF1C1C1E)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("✓", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp),
+                                        tint = Color.White
+                                    )
                                 }
                             }
                         }

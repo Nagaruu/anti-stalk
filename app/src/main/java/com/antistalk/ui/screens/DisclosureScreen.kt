@@ -11,15 +11,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -99,17 +106,17 @@ fun DisclosureScreen(
         )
 
         DisclosureCard(
-            icon = "👁️",
+            icon = Icons.Outlined.Visibility,
             title = "App ĐỌC gì",
             body = "Chữ bạn gõ trong ô tìm kiếm và tiêu đề màn hình (tên trang cá nhân/đoạn chat) trong Facebook, Messenger, Instagram, Zalo mà BẠN đã bật theo dõi — chỉ để đối chiếu với danh sách tên bạn tự nhập để né."
         )
         DisclosureCard(
-            icon = "🚫",
+            icon = Icons.Outlined.Block,
             title = "App KHÔNG làm gì",
             body = "Không đọc nội dung tin nhắn, mật khẩu hay danh bạ. Không chụp màn hình, không ghi âm. Mọi đối chiếu chạy trên máy. Không gửi dữ liệu của bạn lên internet hay cho bên thứ ba."
         )
         DisclosureCard(
-            icon = "🪟",
+            icon = Icons.Outlined.Layers,
             title = "Popup nhắc nhở",
             body = "Khi phát hiện bạn sắp stalk, app hiện popup trên app khác. Bấm “Thôi, tôi đi ra” thì app đưa bạn về màn hình chính. Tắt quyền overlay hoặc Trợ năng bất cứ lúc nào là app ngừng ngay."
         )
@@ -186,7 +193,7 @@ fun DisclosureScreen(
 }
 
 @Composable
-private fun DisclosureCard(icon: String, title: String, body: String) {
+private fun DisclosureCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, body: String) {
     val isDark = LocalIsDarkTheme.current
     val cs = MaterialTheme.colorScheme
     Card(
@@ -200,7 +207,20 @@ private fun DisclosureCard(icon: String, title: String, body: String) {
         )
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
-            Text(icon, fontSize = 22.sp)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) cs.surfaceVariant else WarmSageLight),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = if (isDark) BrandMossGreenLight else WarmSageDark
+                )
+            }
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)

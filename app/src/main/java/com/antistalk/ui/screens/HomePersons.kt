@@ -30,10 +30,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircleOutline
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Tag
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -402,7 +408,7 @@ fun HomeScreen(vm: MainViewModel) {
                 Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     // Status Row: Accessibility Service
                     DetectionStatusRow(
-                        icon = "🔍",
+                        icon = Icons.Outlined.Visibility,
                         title = "Đọc màn hình",
                         isActive = diag.serviceEnabled,
                         activeLabel = "Bật",
@@ -412,7 +418,7 @@ fun HomeScreen(vm: MainViewModel) {
 
                     // Status Row: Overlay Permission
                     DetectionStatusRow(
-                        icon = "🖼️",
+                        icon = Icons.Outlined.Layers,
                         title = "Vẽ trên app khác",
                         isActive = diag.canOverlay,
                         activeLabel = "Đã cấp",
@@ -425,7 +431,12 @@ fun HomeScreen(vm: MainViewModel) {
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("👤", fontSize = 16.sp)
+                        Icon(
+                            Icons.Outlined.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = cs.onSurfaceVariant
+                        )
                         Spacer(Modifier.width(10.dp))
                         Text(
                             "${diag.personCount} người · ${diag.keywordCount} từ khóa · ${diag.enabledAppCount} app bật",
@@ -664,7 +675,7 @@ private fun MiniStatCard(
 // ─── Detection Status Row Component ────────────────────────────────────────────
 @Composable
 private fun DetectionStatusRow(
-    icon: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     isActive: Boolean,
     activeLabel: String,
@@ -676,7 +687,12 @@ private fun DetectionStatusRow(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(icon, fontSize = 16.sp)
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = cs.onSurface
+        )
         Spacer(Modifier.width(10.dp))
         Text(
             title,
@@ -779,7 +795,11 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                             name = ""; extra = ""; note = ""
                         }
                     ) {
-                        Text("✕", fontSize = 18.sp, color = cs.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Đóng",
+                            tint = cs.onSurfaceVariant
+                        )
                     }
                 }
 
@@ -789,6 +809,13 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                     onValueChange = { name = it },
                     label = { Text("Tên người cần né *") },
                     placeholder = { Text("VD: Nguyễn Văn A, Crush, Người yêu cũ...") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.Person,
+                            contentDescription = null,
+                            tint = cs.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
@@ -839,6 +866,13 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                     onValueChange = { extra = it },
                     label = { Text("Từ khóa bổ sung (tùy chọn)") },
                     placeholder = { Text("VD: biệt danh, nick FB, nickname...") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.Tag,
+                            contentDescription = null,
+                            tint = cs.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
@@ -856,6 +890,13 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                     onValueChange = { note = it },
                     label = { Text("Lời nhắc bản thân (tùy chọn)") },
                     placeholder = { Text("VD: Đừng vào xem nữa, tập trung cho bản thân") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.EditNote,
+                            contentDescription = null,
+                            tint = cs.onSurfaceVariant
+                        )
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
@@ -1117,7 +1158,14 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                                     contentColor = Color.White
                                 )
                             ) {
-                                Text("+ Thêm người cần né", color = Color.White, fontWeight = FontWeight.SemiBold)
+                                Icon(
+                                    Icons.Filled.Add,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text("Thêm người cần né", color = Color.White, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
