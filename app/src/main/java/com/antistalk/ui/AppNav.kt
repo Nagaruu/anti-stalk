@@ -97,6 +97,8 @@ fun AppNav(vm: MainViewModel) {
 private fun MainTabs(vm: MainViewModel, goal: String) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val ctx = LocalContext.current
+    val isDark = com.antistalk.ui.theme.LocalIsDarkTheme.current
+    val cs = MaterialTheme.colorScheme
     val update by vm.updateAvailable.collectAsState()
     val updState by vm.updateState.collectAsState()
     val dismissedTag by vm.migrationDismissedTag.collectAsState()
@@ -192,8 +194,6 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
         )
     }
 
-    val isDark = com.antistalk.ui.theme.LocalIsDarkTheme.current
-    val cs = MaterialTheme.colorScheme
     val navColors = androidx.compose.material3.NavigationBarItemDefaults.colors(
         selectedIconColor = if (isDark) com.antistalk.ui.theme.BrandMossGreenLight else com.antistalk.ui.theme.WarmSageDark,
         selectedTextColor = if (isDark) com.antistalk.ui.theme.BrandMossGreenLight else com.antistalk.ui.theme.WarmSageDark,
