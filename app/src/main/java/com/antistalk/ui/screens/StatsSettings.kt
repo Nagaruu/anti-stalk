@@ -77,6 +77,7 @@ import com.antistalk.ui.theme.BrandHotPink
 import com.antistalk.ui.theme.BrandMossGreenLight
 import com.antistalk.ui.theme.BrandViolet
 import com.antistalk.ui.theme.DefaultAppGradient
+import com.antistalk.ui.theme.FbGradient
 import com.antistalk.ui.theme.IgGradient
 import com.antistalk.ui.theme.LocalIsDarkTheme
 import com.antistalk.ui.theme.MintGreen
@@ -592,6 +593,7 @@ fun EventItemRow(
 ) {
     val cs = MaterialTheme.colorScheme
     val (appGradient, appIcon) = when {
+        e.packageName.contains("facebook.katana") -> FbGradient to "📘"
         e.packageName.contains("instagram") -> IgGradient to "📷"
         e.packageName.contains("orca") -> MsGradient to "💬"
         e.packageName.contains("zalo") -> ZaloGradient to "🔵"
@@ -1410,7 +1412,7 @@ fun SettingsScreen(vm: MainViewModel) {
                 ) {
                     if (eventLog.isEmpty()) {
                         Text(
-                            "Chưa có event nào. Mở Messenger gõ tên người cần né rồi quay lại bấm Tải lại log.",
+                            "Chưa có event nào. Mở Facebook gõ tên người cần né rồi quay lại bấm Tải lại log.",
                             style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
                         )
                     } else {

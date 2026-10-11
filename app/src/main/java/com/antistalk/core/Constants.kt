@@ -2,11 +2,13 @@ package com.antistalk.core
 
 /** Monitored social apps. Add new apps here only — detectors are generic. */
 object MonitoredPackages {
+    const val FACEBOOK = "com.facebook.katana"
     const val MESSENGER = "com.facebook.orca"
     const val INSTAGRAM = "com.instagram.android"
     const val ZALO = "com.zing.zalo"
 
     val DEFAULTS = listOf(
+        MonitoredApp(FACEBOOK, "Facebook", true),
         MonitoredApp(MESSENGER, "Messenger", true),
         MonitoredApp(INSTAGRAM, "Instagram", true),
         MonitoredApp(ZALO, "Zalo", true),
