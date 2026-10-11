@@ -16,7 +16,6 @@ import com.antistalk.data.AntiStalkRepository
 import com.antistalk.data.local.entity.AvoidedPerson
 import com.antistalk.data.local.entity.MonitoredAppEntity
 import com.antistalk.data.local.entity.StalkEvent
-import com.antistalk.detection.DetectionLog
 import com.antistalk.detection.OverlayManager
 import com.antistalk.detection.StalkAccessibilityService
 import kotlinx.coroutines.Dispatchers
@@ -26,9 +25,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
 
@@ -210,26 +206,6 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
             val apps = try { repo.enabledPackagesOnce().size } catch (_: Exception) { 0 }
             detectionStatus.value = DetectionStatus(svc, ov, persons, kws, apps)
         }
-    }
-
-    // Raw event debug log (in-memory only, never leaves the device).
-    val eventLog = MutableStateFlow<List<DetectionLog.Entry>>(emptyList())
-    val keywordsPreview = MutableStateFlow<List<String>>(emptyList())
-    private val logTimeFmt = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-
-    fun refreshEventLog() {
-        viewModelScope.launch {
-            eventLog.value = DetectionLog.snapshot()
-            try {
-                keywordsPreview.value = repo.keywordsOnce()
-                    .map { it.normalized }.filter { it.length >= 3 }.distinct().take(12)
-            } catch (_: Exception) { }
-        }
-    }
-
-    fun eventLogLine(e: DetectionLog.Entry): String {
-        val shortPkg = e.pkg.substringAfterLast('.').take(12)
-        return "${logTimeFmt.format(Date(e.time))} $shortPkg ${e.event} '${e.text}' → ${e.result}"
     }
 
     /** Force-show the roast overlay to verify the overlay path end-to-end. */

@@ -43,11 +43,9 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -60,12 +58,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import com.antistalk.BuildConfig
 import com.antistalk.data.local.entity.StalkEvent
 import com.antistalk.ui.MainViewModel
@@ -1022,25 +1017,12 @@ fun SettingsScreen(vm: MainViewModel) {
     val updState by vm.updateState.collectAsState()
     val wifiOnly by vm.updateWifiOnly.collectAsState()
     val themeMode by vm.themeMode.collectAsState()
-    val eventLog by vm.eventLog.collectAsState()
-    val kwsPreview by vm.keywordsPreview.collectAsState()
     val checkFailed by vm.updateCheckFailed.collectAsState()
     val signature by vm.signature.collectAsState()
     val isDark = LocalIsDarkTheme.current
     val ctx = LocalContext.current
     val cs = MaterialTheme.colorScheme
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    var diagTick by remember { mutableIntStateOf(0) }
-
-    DisposableEffect(lifecycle) {
-        val obs = LifecycleEventObserver { _, e ->
-            if (e == Lifecycle.Event.ON_RESUME) diagTick++
-        }
-        lifecycle.addObserver(obs)
-        onDispose { lifecycle.removeObserver(obs) }
-    }
-    LaunchedEffect(diagTick) {
-        vm.refreshEventLog()
+    LaunchedEffect(Unit) {
         vm.refreshSignature(ctx)
     }
 
@@ -1132,13 +1114,13 @@ fun SettingsScreen(vm: MainViewModel) {
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val levels = listOf(
-                        1 to "L1 😌",
-                        2 to "L2 😏 (mặc định)",
-                        3 to "L3 😈",
-                        4 to "L4 💀"
+                        Triple(1, "L1 😌", "Nhẹ nhàng, nhắc khéo"),
+                        Triple(2, "L2 😏 (mặc định)", "Châm biếm kiểu bạn thân"),
+                        Triple(3, "L3 😈", "Gắt, đánh trúng tâm lý"),
+                        Triple(4, "L4 💀", "Thẳng thắn, tỉnh ngộ mạnh")
                     )
 
-                    levels.forEach { (lv, title) -> 
+                    levels.forEach { (lv, title, desc) ->
                         val isSelected = level == lv
                         val itemBorder by animateColorAsState(
                             targetValue = if (isSelected) {
@@ -1179,6 +1161,13 @@ fun SettingsScreen(vm: MainViewModel) {
                                     color = if (isSelected) {
                                         if (isDark) Color(0xFFD6EADd) else Color(0xFF1E3A28)
                                     } else cs.onSurface
+                                )
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    desc,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = cs.onSurfaceVariant,
+                                    fontSize = 12.sp
                                 )
                             }
 
@@ -1384,53 +1373,6 @@ fun SettingsScreen(vm: MainViewModel) {
             colors = ButtonDefaults.outlinedButtonColors(contentColor = cs.error)
         ) {
             Text("Xóa toàn bộ dữ liệu máy")
-        }
-
-        // ─── Debug Diagnostics ────────────────────────────────────────────────
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = cs.surface),
-            elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp),
-            border = androidx.compose.foundation.BorderStroke(
-                1.dp,
-                if (isDark) cs.outlineVariant else cs.outline
-            )
-        ) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Chẩn đoán phát hiện (Nhật ký)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(
-                    "Từ khóa: ${if (kwsPreview.isEmpty()) "— chưa có —" else kwsPreview.joinToString(", ")}",
-                    style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(cs.surfaceVariant)
-                        .padding(10.dp)
-                ) {
-                    if (eventLog.isEmpty()) {
-                        Text(
-                            "Chưa có event nào. Mở Facebook gõ tên người cần né rồi quay lại bấm Tải lại log.",
-                            style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
-                        )
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            eventLog.take(15).forEach { e ->
-                                Text(vm.eventLogLine(e), style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                    }
-                }
-                OutlinedButton(
-                    onClick = { vm.refreshEventLog() },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Tải lại log")
-                }
-            }
         }
 
         Spacer(Modifier.height(30.dp))
