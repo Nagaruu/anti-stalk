@@ -49,18 +49,12 @@ object OverlayManager {
 
     fun isShowing(): Boolean = root != null
 
-    /** Follows the same Sáng / Tối / Hệ thống setting as the in-app theme. */
+    /** Follows the same Sáng / Tối setting as the in-app theme. */
     private fun isDarkOverlay(appCtx: Context): Boolean {
         return try {
-            when (appCtx.getSharedPreferences("antistalk", Context.MODE_PRIVATE)
-                .getString("theme_mode", "system")) {
-                "dark" -> true
-                "light" -> false
-                else -> (appCtx.resources.configuration.uiMode and
-                    android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-                    android.content.res.Configuration.UI_MODE_NIGHT_YES
-            }
-        } catch (_: Exception) { true }
+            appCtx.getSharedPreferences("antistalk", Context.MODE_PRIVATE)
+                .getString("theme_mode", "light") == "dark"
+        } catch (_: Exception) { false }
     }
 
     fun openOverlaySettings(ctx: Context) {

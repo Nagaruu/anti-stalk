@@ -41,6 +41,7 @@ interface AppDao {
     @Insert suspend fun insertAll(list: List<MonitoredAppEntity>)
     /** Upsert: keeps existing rows alive on installs that predate a DEFAULTS entry. */
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(app: MonitoredAppEntity)
+    @Query("DELETE FROM monitored_apps WHERE packageName NOT IN (:keep)") suspend fun deleteNotIn(keep: List<String>)
     @Query("SELECT COUNT(*) FROM monitored_apps") suspend fun count(): Int
 }
 

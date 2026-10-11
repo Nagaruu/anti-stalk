@@ -108,7 +108,6 @@ val BrandViolet             = Color(0xFF4B7B58) // Mapped to brand moss green to
 val BrandHotPink            = Color(0xFFE8795A) // Mapped to warm coral
 
 // Monitored app icon gradients
-val FbGradient          = listOf(Color(0xFF1877F2), Color(0xFF0D65D9))
 val IgGradient          = listOf(Color(0xFFF58529), Color(0xFFDD2A7B), Color(0xFF8134AF))
 val MsGradient          = listOf(Color(0xFF0084FF), Color(0xFF00C6FF))
 val ZaloGradient        = listOf(Color(0xFF0068FF), Color(0xFF0052CC))

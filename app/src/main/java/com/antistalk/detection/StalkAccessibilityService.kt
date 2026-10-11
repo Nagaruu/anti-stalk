@@ -136,19 +136,41 @@ class StalkAccessibilityService : AccessibilityService() {
             return
         }
 
-        // Signal 1 — search input from event (HIGH confidence)
-        if (typed != null) {
-            processTyped(pkg, typed, "event")
-        } else if (type == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED ||
+        // Signal 1 — search input from event (HIGH confidence).
+        // Only ACTIVE input goes straight to processTyped: typing, focus,
+        // selection, or an explicit tap (e.g. tapping a history row MUST fire).
+        // Passive renders (CONTENT_CHANGED / WINDOW_STATE_CHANGED carrying
+        // visible history-row/feed texts) must NOT fire here: opening a search
+        // page with an empty box would popup without any typing. They are left
+        // to processTitle below, which has the empty-search-box history guard.
+        // Exception: a passive event whose source IS an input field (custom
+        // EditTexts, IME callbacks) still counts as typing.
+        val isInputEvent = type == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED ||
             type == AccessibilityEvent.TYPE_VIEW_FOCUSED ||
             type == AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED ||
-            type == AccessibilityEvent.TYPE_VIEW_CLICKED ||
-            isContentChange
-        ) {
-            val now = System.currentTimeMillis()
-            if (now - lastFocusReadAt > FOCUS_READ_THROTTLE_MS) {
-                lastFocusReadAt = now
-                scope.launch { readFocusedText(pkg) }
+            type == AccessibilityEvent.TYPE_VIEW_CLICKED
+        val sourceIsInput = try {
+            event.source?.let {
+                it.isEditable || it.className?.contains("EditText") == true
+            } == true
+        } catch (_: Exception) { false }
+        if (typed != null && (isInputEvent || sourceIsInput)) {
+            processTyped(pkg, typed, "event")
+        } else {
+            if (typed != null && typed.length >= 3) {
+                DetectionLog.add(pkg, typeName, typed.toString().take(24), "passive-quiet")
+            }
+            if (type == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED ||
+                type == AccessibilityEvent.TYPE_VIEW_FOCUSED ||
+                type == AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED ||
+                type == AccessibilityEvent.TYPE_VIEW_CLICKED ||
+                isContentChange
+            ) {
+                val now = System.currentTimeMillis()
+                if (now - lastFocusReadAt > FOCUS_READ_THROTTLE_MS) {
+                    lastFocusReadAt = now
+                    scope.launch { readFocusedText(pkg) }
+                }
             }
         }
 

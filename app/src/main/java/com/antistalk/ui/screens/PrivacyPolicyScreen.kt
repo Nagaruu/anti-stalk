@@ -43,7 +43,7 @@ fun PrivacyPolicyContent() {
         )
         PrivacySection(
             "2. Dữ liệu đọc qua Trợ năng (Accessibility)",
-            "Khi bạn bật dịch vụ Trợ năng, app đọc: (a) chữ trong ô tìm kiếm của Facebook, Messenger, Instagram, Zalo mà bạn đã bật theo dõi; (b) tiêu đề màn hình (tên trang cá nhân/đoạn chat). App chỉ đối chiếu với danh sách tên BẠN tự nhập để né."
+            "Khi bạn bật dịch vụ Trợ năng, app đọc: (a) chữ trong ô tìm kiếm của Messenger, Instagram, Zalo mà bạn đã bật theo dõi; (b) tiêu đề màn hình (tên trang cá nhân/đoạn chat). App chỉ đối chiếu với danh sách tên BẠN tự nhập để né."
         )
         PrivacySection(
             "3. Dữ liệu KHÔNG bao giờ thu thập",

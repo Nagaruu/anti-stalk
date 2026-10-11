@@ -253,9 +253,9 @@ class MainViewModel(private val repo: AntiStalkRepository) : ViewModel() {
             StalkAccessibilityService.invalidateCache()
             // repo.wipeAll() clears the prefs file, so every mirrored StateFlow
             // must fall back to its default too — otherwise the chips keep
-            // showing the pre-wipe values while the prefs already say "system"/true.
+            // showing the pre-wipe values while the prefs already say "light"/true.
             roastLevel.value = 2
-            themeMode.value = "system"
+            themeMode.value = "light"
             updateWifiOnly.value = true
             onboardingDone.value = false
             disclosureAccepted.value = false

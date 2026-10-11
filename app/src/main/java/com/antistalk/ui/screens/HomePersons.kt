@@ -87,7 +87,6 @@ import com.antistalk.ui.theme.BrandHotPink
 import com.antistalk.ui.theme.BrandMossGreenLight
 import com.antistalk.ui.theme.BrandViolet
 import com.antistalk.ui.theme.DefaultAppGradient
-import com.antistalk.ui.theme.FbGradient
 import com.antistalk.ui.theme.IgGradient
 import com.antistalk.ui.theme.LocalIsDarkTheme
 import com.antistalk.ui.theme.MintGreen
@@ -459,7 +458,7 @@ fun HomeScreen(vm: MainViewModel) {
 
                     if (!diag.serviceEnabled || !diag.canOverlay || diag.personCount == 0 || diag.enabledAppCount == 0) {
                         Text(
-                            "Chưa đủ điều kiện nên màn hình cà khịa không hiện. Bật đủ rồi mở Facebook gõ tên người cần né nhé.",
+                            "Chưa đủ điều kiện nên màn hình cà khịa không hiện. Bật đủ rồi mở Messenger gõ tên người cần né nhé.",
                             style = MaterialTheme.typography.labelSmall,
                             color = cs.onSurfaceVariant
                         )
@@ -518,7 +517,6 @@ fun HomeScreen(vm: MainViewModel) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     apps.forEachIndexed { idx, app ->
                         val (appGradient, appIcon) = when {
-                            app.packageName.contains("facebook.katana") -> FbGradient to "📘"
                             app.packageName.contains("instagram") -> IgGradient to "📷"
                             app.packageName.contains("orca") -> MsGradient to "💬"
                             app.packageName.contains("zalo") -> ZaloGradient to "🔵"

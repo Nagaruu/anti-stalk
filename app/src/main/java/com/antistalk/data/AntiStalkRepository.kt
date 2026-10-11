@@ -45,10 +45,10 @@ class AntiStalkRepository(ctx: Context) {
     var updateWifiOnly: Boolean
         get() = prefs.getBoolean("update_wifi_only", true)
         set(v) { prefs.edit().putBoolean("update_wifi_only", v).apply() }
-    /** "system" | "light" | "dark" */
+    /** "light" | "dark" */
     var themeMode: String
-        get() = prefs.getString("theme_mode", "system") ?: "system"
-        set(v) { prefs.edit().putString("theme_mode", v).apply() }
+        get() = (prefs.getString("theme_mode", "light") ?: "light").let { if (it == "dark") "dark" else "light" }
+        set(v) { prefs.edit().putString("theme_mode", if (v == "dark") "dark" else "light").apply() }
     var userGoal: String
         get() = prefs.getString("user_goal", "Người yêu cũ") ?: "Người yêu cũ"
         set(v) { prefs.edit().putString("user_goal", v).apply() }
@@ -64,6 +64,11 @@ class AntiStalkRepository(ctx: Context) {
                 missing.map { MonitoredAppEntity(it.packageName, it.label, it.defaultEnabled) }
             )
         }
+        // Prune apps removed from DEFAULTS so old
+        // installs don't keep showing a dead toggle that the service ignores.
+        try {
+            db.appDao().deleteNotIn(MonitoredPackages.DEFAULTS.map { it.packageName })
+        } catch (_: Exception) { }
         cleanupDangerousKeywords()
     }
 
@@ -197,7 +202,7 @@ class AntiStalkRepository(ctx: Context) {
             })
             put("prefs", JSONObject().apply {
                 put("roast_level", prefs.getInt("roast_level", 2))
-                put("theme_mode", prefs.getString("theme_mode", "system") ?: "system")
+                put("theme_mode", prefs.getString("theme_mode", "light") ?: "light")
                 put("update_wifi_only", prefs.getBoolean("update_wifi_only", true))
                 put("onboarding_done", prefs.getBoolean("onboarding_done", false))
                 put("disclosure_accepted", prefs.getBoolean("disclosure_accepted", false))
@@ -250,10 +255,11 @@ class AntiStalkRepository(ctx: Context) {
         }
 
         val aArr = root.optJSONArray("apps") ?: JSONArray()
+        val allowed = MonitoredPackages.DEFAULTS.map { it.packageName }.toSet()
         for (i in 0 until aArr.length()) {
             val o = aArr.getJSONObject(i)
             val pkg = o.optString("packageName")
-            if (pkg.isEmpty()) continue
+            if (pkg.isEmpty() || pkg !in allowed) continue
             db.appDao().upsert(MonitoredAppEntity(pkg, o.optString("label"), o.optBoolean("enabled", true)))
             appsAdded++
         }
@@ -262,7 +268,7 @@ class AntiStalkRepository(ctx: Context) {
         if (p != null) {
             prefs.edit()
                 .putInt("roast_level", p.optInt("roast_level", prefs.getInt("roast_level", 2)).coerceIn(1, 4))
-                .putString("theme_mode", p.optString("theme_mode", prefs.getString("theme_mode", "system")))
+                .putString("theme_mode", p.optString("theme_mode", prefs.getString("theme_mode", "light")))
                 .putBoolean("update_wifi_only", p.optBoolean("update_wifi_only", true))
                 .putBoolean("onboarding_done", p.optBoolean("onboarding_done", false) || prefs.getBoolean("onboarding_done", false))
                 .putBoolean("disclosure_accepted", p.optBoolean("disclosure_accepted", false) || prefs.getBoolean("disclosure_accepted", false))

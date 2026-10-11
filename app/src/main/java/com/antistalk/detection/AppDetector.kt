@@ -4,8 +4,8 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
 /**
- * Detector per app. MVP uses one GenericDetector for all 4 apps because
- * FB/IG/Zalo/Messenger have unstable resource-ids that change per release.
+ * Detector per app. MVP uses one GenericDetector for all 3 apps because
+ * IG/Zalo/Messenger have unstable resource-ids that change per release.
  * Add app-specific subclasses later WITHOUT touching the service.
  *
  * Three signals:

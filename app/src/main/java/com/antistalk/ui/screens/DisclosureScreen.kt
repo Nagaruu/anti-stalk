@@ -101,7 +101,7 @@ fun DisclosureScreen(
         DisclosureCard(
             icon = "👁️",
             title = "App ĐỌC gì",
-            body = "Chữ bạn gõ trong ô tìm kiếm và tiêu đề màn hình (tên trang cá nhân/đoạn chat) trong Facebook, Messenger, Instagram, Zalo mà BẠN đã bật theo dõi — chỉ để đối chiếu với danh sách tên bạn tự nhập để né."
+            body = "Chữ bạn gõ trong ô tìm kiếm và tiêu đề màn hình (tên trang cá nhân/đoạn chat) trong Messenger, Instagram, Zalo mà BẠN đã bật theo dõi — chỉ để đối chiếu với danh sách tên bạn tự nhập để né."
         )
         DisclosureCard(
             icon = "🚫",

@@ -18,7 +18,7 @@ trang của họ trong các app mạng xã hội đã chọn, app hiện một p
 
 Khi bạn bật dịch vụ Trợ năng, app đọc:
 
-- (a) chữ trong ô tìm kiếm của Facebook, Messenger, Instagram, Zalo mà bạn đã
+- (a) chữ trong ô tìm kiếm của Messenger, Instagram, Zalo mà bạn đã
   bật theo dõi;
 - (b) tiêu đề màn hình (tên trang cá nhân/đoạn chat).
 

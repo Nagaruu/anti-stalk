@@ -77,7 +77,6 @@ import com.antistalk.ui.theme.BrandHotPink
 import com.antistalk.ui.theme.BrandMossGreenLight
 import com.antistalk.ui.theme.BrandViolet
 import com.antistalk.ui.theme.DefaultAppGradient
-import com.antistalk.ui.theme.FbGradient
 import com.antistalk.ui.theme.IgGradient
 import com.antistalk.ui.theme.LocalIsDarkTheme
 import com.antistalk.ui.theme.MintGreen
@@ -593,7 +592,6 @@ fun EventItemRow(
 ) {
     val cs = MaterialTheme.colorScheme
     val (appGradient, appIcon) = when {
-        e.packageName.contains("facebook.katana") -> FbGradient to "📘"
         e.packageName.contains("instagram") -> IgGradient to "📷"
         e.packageName.contains("orca") -> MsGradient to "💬"
         e.packageName.contains("zalo") -> ZaloGradient to "🔵"
@@ -1101,13 +1099,6 @@ fun SettingsScreen(vm: MainViewModel) {
                         onClick = { vm.setThemeMode("dark") },
                         modifier = Modifier.weight(1f)
                     )
-                    ThemePreviewItem(
-                        mode = "system",
-                        label = "Hệ thống",
-                        isSelected = themeMode == "system",
-                        onClick = { vm.setThemeMode("system") },
-                        modifier = Modifier.weight(1f)
-                    )
                 }
             }
         }
@@ -1124,48 +1115,28 @@ fun SettingsScreen(vm: MainViewModel) {
             )
         ) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            "Mức độ cà khịa",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            "Độ gắt của lời nhắc khi phát hiện stalk",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = cs.onSurfaceVariant
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(if (isDark) Color(0x3334D399) else WarmSageLight)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            "⚡ Áp dụng ngay",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isDark) MintGreen else WarmSage
-                        )
-                    }
+                Column {
+                    Text(
+                        "Mức độ cà khịa",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "Độ gắt của lời nhắc khi phát hiện stalk",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cs.onSurfaceVariant
+                    )
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val levels = listOf(
-                        Triple(1, "L1 — Nhẹ nhàng 😌", "Nhắc khéo nhẹ nhàng, không phán xét"),
-                        Triple(2, "L2 — Bạn thân 😏 (mặc định)", "Châm biếm hóm hỉnh như đứa bạn thân"),
-                        Triple(3, "L3 — Cà khịa 😈", "Đánh trúng tim đen, thức tỉnh lòng tự trọng"),
-                        Triple(4, "L4 — Tàn nhẫn nhưng văn minh 💀", "Lời lẽ thẳng thắn, dập tắt ý định ngay lập tức")
+                        1 to "L1 😌",
+                        2 to "L2 😏 (mặc định)",
+                        3 to "L3 😈",
+                        4 to "L4 💀"
                     )
 
-                    levels.forEach { (lv, title, desc) ->
+                    levels.forEach { (lv, title) -> 
                         val isSelected = level == lv
                         val itemBorder by animateColorAsState(
                             targetValue = if (isSelected) {
@@ -1192,7 +1163,7 @@ fun SettingsScreen(vm: MainViewModel) {
                                 .background(itemBg)
                                 .clickable {
                                     vm.setRoastLevel(lv)
-                                    Toast.makeText(ctx, "Đã chọn Mức L$lv — Áp dụng ngay cho lần can thiệp tới!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(ctx, "Đã chọn Mức L$lv", Toast.LENGTH_SHORT).show()
                                 }
                                 .padding(horizontal = 14.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -1207,13 +1178,6 @@ fun SettingsScreen(vm: MainViewModel) {
                                         if (isDark) Color(0xFFD6EADd) else Color(0xFF1E3A28)
                                     } else cs.onSurface
                                 )
-                                Spacer(Modifier.height(2.dp))
-                                Text(
-                                    desc,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = cs.onSurfaceVariant,
-                                    fontSize = 12.sp
-                                )
                             }
 
                             Spacer(Modifier.width(10.dp))
@@ -1226,25 +1190,6 @@ fun SettingsScreen(vm: MainViewModel) {
                                 )
                             )
                         }
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isDark) Color(0x246EAA81) else WarmSageLight)
-                        .padding(12.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("⚡", fontSize = 16.sp)
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Mức L$level đang kích hoạt. Sẽ áp dụng ngay lập tức cho lần can thiệp tiếp theo mà không cần khởi động lại app.",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = if (isDark) MintGreen else WarmSageDark
-                        )
                     }
                 }
             }
@@ -1353,103 +1298,6 @@ fun SettingsScreen(vm: MainViewModel) {
                     )
                 }
                 } // end sideload-only updater UI
-            }
-        }
-
-        // ─── Signing certificate diagnostics ─────────────────────────────────
-        var showSigDetails by remember { mutableStateOf(false) }
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = cs.surface),
-            elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp),
-            border = androidx.compose.foundation.BorderStroke(
-                1.dp,
-                if (isDark) cs.outlineVariant else cs.outline
-            )
-        ) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Chữ ký cài đặt",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    TextButton(onClick = { showSigDetails = !showSigDetails }) {
-                        Text(
-                            if (showSigDetails) "Ẩn chi tiết" else "Xem chi tiết",
-                            fontSize = 13.sp,
-                            color = if (isDark) MintGreen else WarmSage
-                        )
-                    }
-                }
-                val sig = signature
-                if (sig == null) {
-                    Text("Đang đọc chữ ký…", style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
-                } else {
-                    if (sig.isReleaseKey) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text("✓", color = if (isDark) MintGreen else WarmSage, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text(
-                                "Bản cài đặt hợp lệ (sẵn sàng tự động cập nhật)",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium,
-                                color = if (isDark) MintGreen else WarmSage
-                            )
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(cs.error.copy(alpha = 0.08f))
-                                .padding(10.dp)
-                        ) {
-                            Text(
-                                "⚠️ Bản đang cài được ký bằng khoá cũ (build trước khi có khoá ổn định). " +
-                                    "Android sẽ từ chối mọi bản cập nhật mới — chỉ cần chuyển đổi 1 lần là xong. " +
-                                    "Nếu đang có bản cập nhật, bấm nút hướng dẫn trong mục Cập nhật ứng dụng.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = cs.error
-                            )
-                        }
-                    }
-
-                    if (showSigDetails) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(cs.surfaceVariant)
-                                .padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                "Bản đang cài: ${com.antistalk.core.SigningInfo.shortSha(sig.installedSha)}",
-                                style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
-                            )
-                            Text(
-                                "Khoá chính thức: ${com.antistalk.core.SigningInfo.shortSha(sig.expectedSha)}",
-                                style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            OutlinedButton(
-                                onClick = { vm.refreshSignature(ctx) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text("Kiểm tra lại chữ ký", fontSize = 13.sp)
-                            }
-                        }
-                    }
-                }
             }
         }
 
@@ -1562,7 +1410,7 @@ fun SettingsScreen(vm: MainViewModel) {
                 ) {
                     if (eventLog.isEmpty()) {
                         Text(
-                            "Chưa có event nào. Mở Facebook gõ tên người cần né rồi quay lại bấm Tải lại log.",
+                            "Chưa có event nào. Mở Messenger gõ tên người cần né rồi quay lại bấm Tải lại log.",
                             style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant
                         )
                     } else {
@@ -1695,69 +1543,7 @@ private fun ThemePreviewItem(
                         }
                     }
                 }
-                else -> {
-                    // System mode preview: 50/50 split
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        // Left half (Dark)
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(Color(0xFF3E4044))
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(top = 16.dp, start = 10.dp)
-                                    .clip(RoundedCornerShape(topStart = 10.dp))
-                                    .background(Color(0xFF181A1D))
-                            ) {
-                                Text(
-                                    "Aa",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(start = 6.dp, top = 8.dp)
-                                )
-                            }
-                        }
-                        // Right half (Light)
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(Color(0xFFEDEDF0))
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(top = 16.dp)
-                                    .background(Color.White)
-                            ) {
-                                Text(
-                                    "Aa",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = Color(0xFF1C1C1E),
-                                    modifier = Modifier.padding(start = 6.dp, top = 8.dp)
-                                )
-                                if (isSelected) {
-                                    Box(
-                                        modifier = Modifier
-                                            .align(Alignment.BottomEnd)
-                                            .padding(bottom = 6.dp, end = 6.dp)
-                                            .size(18.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFF1C1C1E)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("✓", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                else -> Unit
             }
         }
 

@@ -3,7 +3,6 @@ package com.antistalk
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,9 +20,8 @@ class MainActivity : ComponentActivity() {
             val mode by vm.themeMode.collectAsState()
             AntiStalkTheme(
                 darkTheme = when (mode) {
-                    "light" -> false
                     "dark" -> true
-                    else -> isSystemInDarkTheme()
+                    else -> false
                 }
             ) {
                 AppNav(vm)
