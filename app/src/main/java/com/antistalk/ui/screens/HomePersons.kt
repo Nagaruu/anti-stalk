@@ -30,6 +30,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.outlined.PlayCircleOutline
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -168,52 +172,38 @@ fun HomeScreen(vm: MainViewModel) {
 
                 Spacer(Modifier.width(12.dp))
 
-                // Avatar / Mood Ring
-                if (isDark) {
+                // Modern Shield Status Badge
+                Box(
+                    modifier = Modifier.size(46.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Box(
                         modifier = Modifier
                             .size(46.dp)
                             .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(listOf(BrandViolet, BrandHotPink))
+                            .background(if (isDark) Color(0x336EAA81) else WarmSageLight)
+                            .border(
+                                1.5.dp,
+                                if (isDark) Color(0x666EAA81) else Color(0x335B8A6A),
+                                CircleShape
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("✨", fontSize = 20.sp)
+                        Icon(
+                            Icons.Filled.Shield,
+                            contentDescription = "Bảo vệ đang hoạt động",
+                            modifier = Modifier.size(24.dp),
+                            tint = if (isDark) BrandMossGreenLight else WarmSageDark
+                        )
                     }
-                } else {
-                    val infiniteTransition = rememberInfiniteTransition(label = "mood_spin")
-                    val angle by infiniteTransition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 360f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(durationMillis = 8000, easing = LinearEasing),
-                            repeatMode = RepeatMode.Restart
-                        ),
-                        label = "angle"
-                    )
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(10.dp)
+                            .align(Alignment.TopEnd)
                             .clip(CircleShape)
-                            .rotate(angle)
-                            .background(
-                                Brush.sweepGradient(
-                                    listOf(WarmSage, AccentTerracotta, AccentLavender, WarmSage)
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color.White),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("🛡️", fontSize = 18.sp)
-                        }
-                    }
+                            .background(if (isDark) BrandMossGreenLight else WarmSageDark)
+                            .border(1.5.dp, cs.surface, CircleShape)
+                    )
                 }
             }
         }
@@ -230,7 +220,20 @@ fun HomeScreen(vm: MainViewModel) {
                         modifier = Modifier.padding(18.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("😌", fontSize = 32.sp)
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isDark) Color(0x266EAA81) else Color(0xFFE8EFEA)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.Shield,
+                                contentDescription = null,
+                                modifier = Modifier.size(22.dp),
+                                tint = if (isDark) BrandMossGreenLight else WarmSageDark
+                            )
+                        }
                         Spacer(Modifier.width(14.dp))
                         Text(
                             "Chưa né ai cả. Sang tab Né ai thêm 1 người để bắt đầu kích hoạt bảo vệ nhé!",
@@ -479,13 +482,25 @@ fun HomeScreen(vm: MainViewModel) {
                                 contentColor = Color.White
                             )
                         ) {
-                            Text("🎯 Test màn cà khịa", fontWeight = FontWeight.SemiBold)
+                            Icon(
+                                Icons.Outlined.PlayCircleOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Test màn cà khịa", fontWeight = FontWeight.SemiBold)
                         }
 
                         OutlinedButton(
                             onClick = { tick++; vm.refreshStats() },
                             shape = RoundedCornerShape(14.dp)
                         ) {
+                            Icon(
+                                Icons.Outlined.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
                             Text("Kiểm tra lại")
                         }
                     }
@@ -1069,7 +1084,20 @@ fun PersonsScreen(vm: MainViewModel, pendingGoal: String) {
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text("🛡️", fontSize = 42.sp)
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (isDark) Color(0x336EAA81) else WarmSageLight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Shield,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp),
+                                    tint = if (isDark) BrandMossGreenLight else WarmSageDark
+                                )
+                            }
                             Text(
                                 "Chưa có ai trong danh sách né",
                                 style = MaterialTheme.typography.titleMedium,

@@ -12,12 +12,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Psychology
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -121,8 +127,26 @@ fun InterventionOverlay(
                 }
 
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Text(if (isDark) "😏" else "🧠", fontSize = 42.sp)
-                    Spacer(Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(if (isDark) Color(0x336EAA81) else WarmSageLight)
+                            .border(
+                                1.dp,
+                                if (isDark) Color(0x4D6EAA81) else Color(0x4D5B8A6A),
+                                RoundedCornerShape(18.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Outlined.Psychology,
+                            contentDescription = "Bảo vệ tâm lý",
+                            modifier = Modifier.size(30.dp),
+                            tint = if (isDark) BrandMossGreenLight else WarmSageDark
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
                     Text(
                         if (vi) {
                             if (isDark) "Lại tìm người ta à?" else "Khoan đã bạn ơi!"
@@ -156,13 +180,25 @@ fun InterventionOverlay(
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            if (vi) "🔁 Lần thứ ${s.countToday.coerceAtLeast(1)} hôm nay · ${s.personName}"
-                            else "🔁 #${s.countToday.coerceAtLeast(1)} today · ${s.personName}",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isDark) Color(0xFFD6EADd) else AccentTerracotta
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.Repeat,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = if (isDark) Color(0xFFD6EADd) else AccentTerracotta
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                if (vi) "Lần thứ ${s.countToday.coerceAtLeast(1)} hôm nay · ${s.personName}"
+                                else "#${s.countToday.coerceAtLeast(1)} today · ${s.personName}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDark) Color(0xFFD6EADd) else AccentTerracotta
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(16.dp))
@@ -181,9 +217,7 @@ fun InterventionOverlay(
                             )
                         ) {
                             Text(
-                                if (vi) {
-                                    if (isDark) "Thôi, tôi đi ra" else "🌿 Thôi, tôi đi ra!"
-                                } else "Nah, I'm out",
+                                if (vi) "Thôi, tôi đi ra" else "Nah, I'm out",
                                 fontWeight = FontWeight.SemiBold
                             )
                         }

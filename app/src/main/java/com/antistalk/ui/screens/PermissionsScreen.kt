@@ -19,10 +19,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -124,7 +130,7 @@ fun PermissionsScreen(onDone: () -> Unit) {
             title = "1. Trợ năng (Accessibility)",
             description = "Cho phép app nhận diện khi bạn gõ tên người cần né trong thanh tìm kiếm.",
             isGranted = accOn,
-            icon = "👁️",
+            icon = Icons.Outlined.Visibility,
             buttonLabel = if (accOn) "Đã cấp quyền ✓" else "Mở cài đặt trợ năng",
             onAction = {
                 ctx.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
@@ -138,7 +144,7 @@ fun PermissionsScreen(onDone: () -> Unit) {
             title = "2. Hiển thị trên ứng dụng khác",
             description = "Cho phép hiện màn hình 'cà khịa' nhắc nhở ngay khi phát hiện hành vi stalk.",
             isGranted = overlayOn,
-            icon = "🪟",
+            icon = Icons.Outlined.Layers,
             buttonLabel = if (overlayOn) "Đã cấp quyền ✓" else "Cấp quyền hiển thị",
             onAction = { OverlayManager.openOverlaySettings(ctx) }
         )
@@ -167,7 +173,12 @@ fun PermissionsScreen(onDone: () -> Unit) {
                 modifier = Modifier.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(if (allGranted) "🎉" else "😏", fontSize = 22.sp)
+                Icon(
+                    if (allGranted) Icons.Filled.CheckCircle else Icons.Outlined.Info,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = if (allGranted) (if (isDark) MintGreen else WarmSage) else cs.onSurfaceVariant
+                )
                 Spacer(Modifier.width(12.dp))
                 Text(
                     if (allGranted) "Tuyệt vời! Đã đủ quyền để kích hoạt Anti-Stalk."
@@ -224,7 +235,7 @@ private fun PermissionCard(
     title: String,
     description: String,
     isGranted: Boolean,
-    icon: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     buttonLabel: String,
     onAction: () -> Unit
 ) {
@@ -260,7 +271,12 @@ private fun PermissionCard(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(icon, fontSize = 18.sp)
+                        Icon(
+                            icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = if (isDark) BrandMossGreenLight else WarmSageDark
+                        )
                     }
                     Spacer(Modifier.width(10.dp))
                     Text(

@@ -9,10 +9,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -217,28 +221,28 @@ private fun MainTabs(vm: MainViewModel, goal: String) {
                 NavigationBarItem(
                     selected = tab == 0,
                     onClick = { tab = 0 },
-                    icon = { Icon(Icons.Filled.Home, null) },
+                    icon = { Icon(if (tab == 0) Icons.Filled.Home else Icons.Outlined.Home, null) },
                     label = { Text("Hôm nay", fontWeight = if (tab == 0) FontWeight.Bold else FontWeight.Normal) },
                     colors = navColors
                 )
                 NavigationBarItem(
                     selected = tab == 1,
                     onClick = { tab = 1 },
-                    icon = { Icon(Icons.Filled.Person, null) },
+                    icon = { Icon(if (tab == 1) Icons.Filled.Person else Icons.Outlined.Person, null) },
                     label = { Text("Né ai", fontWeight = if (tab == 1) FontWeight.Bold else FontWeight.Normal) },
                     colors = navColors
                 )
                 NavigationBarItem(
                     selected = tab == 2,
                     onClick = { tab = 2; vm.refreshStats() },
-                    icon = { Icon(Icons.Filled.Star, null) },
+                    icon = { Icon(if (tab == 2) Icons.Filled.BarChart else Icons.Outlined.BarChart, null) },
                     label = { Text("Thống kê", fontWeight = if (tab == 2) FontWeight.Bold else FontWeight.Normal) },
                     colors = navColors
                 )
                 NavigationBarItem(
                     selected = tab == 3,
                     onClick = { tab = 3 },
-                    icon = { Icon(Icons.Filled.Settings, null) },
+                    icon = { Icon(if (tab == 3) Icons.Filled.Settings else Icons.Outlined.Settings, null) },
                     label = { Text("Cài đặt", fontWeight = if (tab == 3) FontWeight.Bold else FontWeight.Normal) },
                     colors = navColors
                 )
